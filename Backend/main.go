@@ -26,6 +26,10 @@ func main() {
 		ctx.String(http.StatusOK, "Hello Docummunity!!")
 	})
 
+	router.GET("/", func(ctx *gin.Context) {
+		ctx.String(http.StatusOK, "Its Working")
+	})
+
 	//START THE SERVER
 	fmt.Print("-------------------STARTING THE SERVER------------------\n\n\n")
 	err := router.Run(":8000")

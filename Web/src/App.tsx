@@ -1,6 +1,7 @@
 import {useState} from 'react'
 import "./App.css";
 import axios from 'axios';
+import { Button } from '@mui/material';
 
 
 function App() {
@@ -15,7 +16,7 @@ function App() {
   return (
     <>
       <h1>{message}</h1>
-      <button onClick={() => getData()}>Get Message</button>
+      <Button onClick={() => getData()} variant='contained' color='secondary'>Get Message</Button>
     </>
   );
 }
