@@ -1,11 +1,4 @@
-# Light Color-scheme for App
-- Primary: B34D20
-- Background: D8A47F
-- Secondary: ACF39D
-- Shadows: B5DEAD
-- Outlines- 242331
-(Generated using coolors.co and my efforts)
-- General Font: Roboto
+- General Font: Roboto  
 - Design: Material UI
 - Icon: Created using Canva
 
