@@ -1,4 +1,5 @@
 import {
+  Avatar,
   Box,
   Button,
   Container,
@@ -10,6 +11,8 @@ import "@fontsource/roboto/400";
 import Logo from "../assets/Docummunity.png";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
+import { useNavigate } from "react-router-dom";
+import { heIL } from "@mui/material/locale";
 
 interface NavbarProps {
   isSignedIn: boolean;
@@ -62,10 +65,11 @@ function Navbar(args: NavbarProps) {
 }
 
 function NavbarRightForSignedIn() {
+  const navigator = useNavigate();
   return (
     <Box
       sx={{
-        width: "25%",
+        width: "20%",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "center",
@@ -89,6 +93,7 @@ function NavbarRightForSignedIn() {
             bgcolor: "background.default",
             ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
           }}
+          onClick={() => navigator("/")}
         >
           <Typography variant="button">Home</Typography>
         </Button>
@@ -99,6 +104,9 @@ function NavbarRightForSignedIn() {
             borderColor: "divider",
             bgcolor: "background.default",
             ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
+          }}
+          onClick={() => {
+            navigator("/download");
           }}
         >
           <Typography variant="button">Download</Typography>
@@ -114,13 +122,19 @@ function NavbarRightForSignedIn() {
           justifyContent: "center",
         }}
       >
-        <SvgIcon component={AccountCircleIcon} sx={{ fontSize: "7vh" }} />
+        <Avatar alt="Error Loading avatar">
+          <SvgIcon
+            component={AccountCircleIcon}
+            sx={{ height: "100%", width: "100%" }}
+          />
+        </Avatar>
       </Box>
     </Box>
   );
 }
 
 function NavbarRightForAnonymous() {
+  const navigator = useNavigate();
   return (
     <Box
       sx={{
@@ -139,6 +153,9 @@ function NavbarRightForAnonymous() {
           bgcolor: "background.default",
           ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
         }}
+        onClick={() => {
+          navigator("/log_in");
+        }}
       >
         <Typography variant="button">Log-In</Typography>
       </Button>
@@ -150,6 +167,9 @@ function NavbarRightForAnonymous() {
           bgcolor: "background.default",
           ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
         }}
+        onClick={() => {
+          navigator("/sign_up");
+        }}
       >
         <Typography variant="button">Sign-Up</Typography>
       </Button>
@@ -160,6 +180,9 @@ function NavbarRightForAnonymous() {
           borderColor: "divider",
           bgcolor: "background.default",
           ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
+        }}
+        onClick={() => {
+          navigator("/download");
         }}
       >
         <Typography variant="button">Download</Typography>

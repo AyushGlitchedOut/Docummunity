@@ -18,8 +18,8 @@ export const AppLightTheme = responsiveFontSizes(
         main: "#616161", //For dialogue boxes
       },
       text: {
-        primary: "#333333", //text on light backgrounds
-        secondary: "#BBBBBB", //text on dark backgrounds
+        primary: "#333333", //text on default backgrounds
+        secondary: "#222222", //text on paper backgrounds
       },
       error: {
         main: "#c62828", // For error messages, prohibition warning dialogues, Cancel buttons, delete dialogues, etc.
@@ -29,6 +29,9 @@ export const AppLightTheme = responsiveFontSizes(
       fontFamily: "Roboto",
       h3: {
         fontSize: "2.5rem",
+        textShadow: "2px 2px 1px grey",
+      },
+      h4: {
         textShadow: "2px 2px 1px grey",
       },
       button: {
