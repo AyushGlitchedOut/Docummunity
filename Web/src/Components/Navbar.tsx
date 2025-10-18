@@ -11,14 +11,17 @@ import "@fontsource/roboto/400";
 import Logo from "../assets/Docummunity.png";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
-import { useNavigate } from "react-router-dom";
-import { heIL } from "@mui/material/locale";
+import { useNavigate, type NavigateFunction } from "react-router-dom";
 
 interface NavbarProps {
   isSignedIn: boolean;
 }
+interface NavbarRightProps {
+  navigator: NavigateFunction;
+}
 
 function Navbar(args: NavbarProps) {
+  const navigator = useNavigate();
   return (
     // Main Navbar begins here
     <Container
@@ -42,10 +45,9 @@ function Navbar(args: NavbarProps) {
           paddingTop: "3px",
         }}
       >
-        <Box>
-          {" "}
+        <IconButton onClick={() => navigator("/")}>
           <img src={Logo} style={{ height: "7vh", width: "7vh" }}></img>
-        </Box>
+        </IconButton>
         <Typography
           variant="h3"
           sx={{ color: "primary.main", letterSpacing: "5px" }}
@@ -56,16 +58,15 @@ function Navbar(args: NavbarProps) {
 
       {/* Later part of Navbar */}
       {args.isSignedIn ? (
-        <NavbarRightForSignedIn />
+        <NavbarRightForSignedIn navigator={navigator} />
       ) : (
-        <NavbarRightForAnonymous />
+        <NavbarRightForAnonymous navigator={navigator} />
       )}
     </Container>
   );
 }
 
-function NavbarRightForSignedIn() {
-  const navigator = useNavigate();
+function NavbarRightForSignedIn(args: NavbarRightProps) {
   return (
     <Box
       sx={{
@@ -93,7 +94,7 @@ function NavbarRightForSignedIn() {
             bgcolor: "background.default",
             ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
           }}
-          onClick={() => navigator("/")}
+          onClick={() => args.navigator("/")}
         >
           <Typography variant="button">Home</Typography>
         </Button>
@@ -106,7 +107,7 @@ function NavbarRightForSignedIn() {
             ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
           }}
           onClick={() => {
-            navigator("/download");
+            args.navigator("/download");
           }}
         >
           <Typography variant="button">Download</Typography>
@@ -133,8 +134,7 @@ function NavbarRightForSignedIn() {
   );
 }
 
-function NavbarRightForAnonymous() {
-  const navigator = useNavigate();
+function NavbarRightForAnonymous(args: NavbarRightProps) {
   return (
     <Box
       sx={{
@@ -154,7 +154,7 @@ function NavbarRightForAnonymous() {
           ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
         }}
         onClick={() => {
-          navigator("/log_in");
+          args.navigator("/log_in");
         }}
       >
         <Typography variant="button">Log-In</Typography>
@@ -168,7 +168,7 @@ function NavbarRightForAnonymous() {
           ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
         }}
         onClick={() => {
-          navigator("/sign_up");
+          args.navigator("/sign_up");
         }}
       >
         <Typography variant="button">Sign-Up</Typography>
@@ -182,12 +182,18 @@ function NavbarRightForAnonymous() {
           ":hover": { boxShadow: "inset 0 0 20px rgba(128,128,128,0.3)" },
         }}
         onClick={() => {
-          navigator("/download");
+          args.navigator("/download");
         }}
       >
         <Typography variant="button">Download</Typography>
       </Button>
-      <IconButton aria-label="Info" color="secondary">
+      <IconButton
+        aria-label="Info"
+        color="secondary"
+        onClick={() => {
+          args.navigator("/?tab=info");
+        }}
+      >
         <SvgIcon component={InfoOutlineIcon} fontSize={"large"} />
       </IconButton>
     </Box>

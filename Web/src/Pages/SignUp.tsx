@@ -41,7 +41,11 @@ function SignUpPage() {
   return (
     <>
       <FormControlLabel
-        label={<Typography variant="h6">Light Mode</Typography>}
+        label={
+          <Typography variant="h6" sx={{ color: "text.primary" }}>
+            Light Mode
+          </Typography>
+        }
         sx={{ position: "absolute", margin: "5px" }}
         control={
           <Switch
@@ -93,6 +97,7 @@ function SignUpPage() {
           </Typography>
           <Box
             component="form"
+            onSubmit={() => handleSignUp()}
             sx={{
               display: "flex",
               flexDirection: "column",
@@ -113,7 +118,12 @@ function SignUpPage() {
               }}
             >
               <Typography variant="subtitle2">Username/Email-id:</Typography>
-              <TextField label="Username" variant="filled" fullWidth={true} />
+              <TextField
+                label="Username"
+                variant="filled"
+                fullWidth={true}
+                required={true}
+              />
             </Box>
             {/* Password */}
             <Box
@@ -131,6 +141,7 @@ function SignUpPage() {
                 type={passwordShow ? undefined : "password"}
                 fullWidth={true}
                 value={password}
+                required={true}
                 onChange={(event) => setPassword(event.target.value)}
                 onKeyDown={handleCapsLock}
                 onKeyUp={handleCapsLock}
@@ -166,6 +177,7 @@ function SignUpPage() {
             >
               <Typography variant="subtitle2">Confirm Password:</Typography>
               <TextField
+                required={true}
                 label="Re-enter Password"
                 variant="filled"
                 type={passwordShow ? undefined : "password"}
@@ -206,7 +218,7 @@ function SignUpPage() {
               <Button
                 variant="contained"
                 sx={{ width: "40%", margin: "1%" }}
-                onClick={() => handleSignUp()}
+                type="submit"
               >
                 <Typography variant="h6">Sign-up</Typography>
               </Button>

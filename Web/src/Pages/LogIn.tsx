@@ -36,7 +36,11 @@ function LoginPage() {
   return (
     <>
       <FormControlLabel
-        label={<Typography variant="h6">Light Mode</Typography>}
+        label={
+          <Typography variant="h6" sx={{ color: "text.primary" }}>
+            Light Mode
+          </Typography>
+        }
         sx={{ position: "absolute", margin: "5px" }}
         control={
           <Switch
