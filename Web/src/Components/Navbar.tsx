@@ -12,15 +12,15 @@ import Logo from "../assets/Docummunity.png";
 import InfoOutlineIcon from "@mui/icons-material/InfoOutline";
 import AccountCircleIcon from "@mui/icons-material/AccountCircle";
 import { useNavigate, type NavigateFunction } from "react-router-dom";
+import { useFirebase } from "../services/firebase";
 
-interface NavbarProps {
-  isSignedIn: boolean;
-}
 interface NavbarRightProps {
   navigator: NavigateFunction;
 }
 
-function Navbar(args: NavbarProps) {
+function Navbar() {
+  const firebase = useFirebase();
+  const isSignedIn: boolean = firebase.isLoggedIn;
   const navigator = useNavigate();
   return (
     // Main Navbar begins here
@@ -57,7 +57,7 @@ function Navbar(args: NavbarProps) {
       </Box>
 
       {/* Later part of Navbar */}
-      {args.isSignedIn ? (
+      {isSignedIn ? (
         <NavbarRightForSignedIn navigator={navigator} />
       ) : (
         <NavbarRightForAnonymous navigator={navigator} />

@@ -18,20 +18,66 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useFirebase } from "../services/firebase";
 
 function LoginPage() {
   const [lightTheme, setLightTheme] = useState(true);
   const [capsLockOn, setCapsLockOn] = useState<boolean>();
   const [passwordShow, setpasswordShow] = useState<boolean>(false);
+  //Input values
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
+  const navigator = useNavigate();
+
   function handleCapsLock(event: any) {
     setCapsLockOn(event.getModifierState("CapsLock"));
   }
 
-  function handleSignIn() {
-    alert("Sign In");
+  const firebase = useFirebase();
+
+  async function handleSignIn(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    try {
+      await firebase.LogInWithEmailAndPassword(email, password);
+    } catch (error: any) {
+      console.log(error);
+      if (error.code == "auth/invalid-email") {
+        alert("The Email is Invalid");
+        return;
+      }
+      if (error.code == "auth/invalid-credential") {
+        alert("The Email/Password is Wrong. Please try again :(");
+        return;
+      }
+      alert("Something Went Wong :(");
+
+      return;
+    }
   }
+  async function handleSignInWithGoogle() {
+    try {
+      await firebase.LogInWithGoogleAccount();
+    } catch (error: any) {
+      alert("Something Went Wrong!");
+      return;
+    }
+  }
+  async function handleSignInWithGithub() {
+    try {
+      await firebase.LogInWithGithubAccount();
+    } catch (error: any) {
+      alert("Something Went Wrong!");
+      return;
+    }
+  }
+
+  useEffect(() => {
+    if (firebase.isLoggedIn) {
+      navigator("/home");
+    }
+  }, [firebase]);
 
   return (
     <>
@@ -101,8 +147,9 @@ function LoginPage() {
               height: "70%",
               margin: "10px",
             }}
+            onSubmit={(event) => handleSignIn(event)}
           >
-            {/* Username */}
+            {/* Email-Id */}
             <Box
               sx={{
                 display: "flex",
@@ -111,8 +158,17 @@ function LoginPage() {
                 width: "100%",
               }}
             >
-              <Typography variant="subtitle2">Username/Email-id:</Typography>
-              <TextField label="Username" variant="filled" fullWidth={true} />
+              <Typography variant="subtitle2">Email-id:</Typography>
+              <TextField
+                label="E-mail"
+                variant="filled"
+                fullWidth={true}
+                value={email}
+                required={true}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                }}
+              />
             </Box>
             {/* Password */}
             <Box
@@ -128,10 +184,15 @@ function LoginPage() {
                 label="Password"
                 variant="filled"
                 type={passwordShow ? undefined : "password"}
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                }}
                 id="capsLockCheck"
                 fullWidth={true}
                 onKeyDown={handleCapsLock}
                 onKeyUp={handleCapsLock}
+                required={true}
                 slotProps={{
                   input: {
                     endAdornment: (
@@ -145,12 +206,13 @@ function LoginPage() {
                     ),
                   },
                 }}
-                helperText={
-                  <Fade in={capsLockOn} timeout={500}>
-                    <FormHelperText error>CAPS LOCK IS ON!!</FormHelperText>
-                  </Fade>
-                }
               />
+              {/* Note: kept the fade and helper outside the input tag without using the helper text prop as it will lead to nested <p> tags which give hydration error */}
+              <Fade in={capsLockOn} timeout={500}>
+                <FormHelperText component={"div"} error>
+                  CAPS LOCK IS ON!!
+                </FormHelperText>
+              </Fade>
             </Box>
             <Box
               sx={{
@@ -163,7 +225,7 @@ function LoginPage() {
               <Button
                 variant="contained"
                 sx={{ width: "40%", margin: "1%" }}
-                onClick={() => handleSignIn()}
+                type="submit"
               >
                 <Typography variant="h6">Sign-In</Typography>
               </Button>
@@ -179,14 +241,21 @@ function LoginPage() {
                 justifyContent: "center",
               }}
             >
-              <IconButton size="large">
+              <IconButton
+                size="large"
+                onClick={() => {
+                  handleSignInWithGoogle();
+                }}
+              >
                 <Google fontSize="large" />
               </IconButton>
-              <IconButton size="large">
+              <IconButton
+                size="large"
+                onClick={() => {
+                  handleSignInWithGithub();
+                }}
+              >
                 <GitHub fontSize="large" />
-              </IconButton>
-              <IconButton size="large">
-                <Microsoft fontSize="large" />
               </IconButton>
             </Box>
           </Box>

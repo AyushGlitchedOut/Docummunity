@@ -7,9 +7,9 @@ export const AppLightTheme = responsiveFontSizes(
         main: "#dd6401", //For larger, major elements e.g Navbar
       },
       secondary: {
-        main: "#244d1a", //For smaller, detailing elements e.g. Icons, Buttons, Loading screens
+        main: "#312b2bff", //For smaller, detailing elements e.g. Icons, Buttons, Loading screens
       },
-      divider: "#242331", //outlines
+      divider: "#4c4c54ff", //outlines
       background: {
         paper: "#d8a47f", // For cards e.g. document Card
         default: "#eb723e", //Default for the entire page

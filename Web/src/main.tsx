@@ -4,11 +4,14 @@ import "./index.css";
 import App from "./App.tsx";
 import { ThemeProvider } from "@emotion/react";
 import { AppLightTheme } from "./themes/themes.tsx";
+import { FirebaseProvider } from "./services/firebase.tsx";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <ThemeProvider theme={AppLightTheme}>
-      <App />
+      <FirebaseProvider>
+        <App />
+      </FirebaseProvider>
     </ThemeProvider>
   </StrictMode>,
 );

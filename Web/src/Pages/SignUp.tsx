@@ -18,25 +18,66 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import { useState } from "react";
-import { Link } from "react-router-dom";
+import React, { useEffect, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useFirebase } from "../services/firebase";
 
 function SignUpPage() {
   const [lightTheme, setLightTheme] = useState(true);
   const [capsLockOn, setCapsLockOn] = useState<boolean>();
   const [passwordShow, setpasswordShow] = useState<boolean>(false);
+  const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [confirmedPassword, setconfirmedPassword] = useState<string>("");
+  const firebase = useFirebase();
+  const navigator = useNavigate();
+
   function handleCapsLock(event: any) {
     setCapsLockOn(event.getModifierState("CapsLock"));
   }
-  function handleSignUp() {
+
+  async function handleSignUp(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
     if (password == confirmedPassword) {
-      alert("Signed Up!");
+      if (password.length < 6) {
+        alert("Password must be atleats 6 charcters long!");
+        return;
+      }
+      try {
+        await firebase.SignUpWithEmailAndPassword(email, password);
+      } catch (error: any) {
+        if (error.code == "auth/email-already-in-use") {
+          alert("Email Already in Use! (Try Signing-In)");
+        }
+        return;
+      }
     } else {
       alert("Please match the password and confirmed password fields");
     }
   }
+
+  async function handleSignInWithGoogle() {
+    try {
+      await firebase.LogInWithGoogleAccount();
+    } catch (error: any) {
+      alert("Something Went Wrong!");
+      return;
+    }
+  }
+  async function handleSignInWithGithub() {
+    try {
+      await firebase.LogInWithGithubAccount();
+    } catch (error: any) {
+      alert("Something Went Wrong!");
+      return;
+    }
+  }
+
+  useEffect(() => {
+    if (firebase.isLoggedIn) {
+      navigator("/home");
+    }
+  }, [firebase]);
 
   return (
     <>
@@ -97,7 +138,7 @@ function SignUpPage() {
           </Typography>
           <Box
             component="form"
-            onSubmit={() => handleSignUp()}
+            onSubmit={(event) => handleSignUp(event)}
             sx={{
               display: "flex",
               flexDirection: "column",
@@ -108,7 +149,7 @@ function SignUpPage() {
               margin: "10px",
             }}
           >
-            {/* Username */}
+            {/* Email-Id */}
             <Box
               sx={{
                 display: "flex",
@@ -117,12 +158,14 @@ function SignUpPage() {
                 width: "100%",
               }}
             >
-              <Typography variant="subtitle2">Username/Email-id:</Typography>
+              <Typography variant="subtitle2">Email-id:</Typography>
               <TextField
-                label="Username"
+                label="Email"
                 variant="filled"
                 fullWidth={true}
                 required={true}
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
               />
             </Box>
             {/* Password */}
@@ -234,14 +277,21 @@ function SignUpPage() {
                 justifyContent: "center",
               }}
             >
-              <IconButton size="large">
+              <IconButton
+                size="large"
+                onClick={() => {
+                  handleSignInWithGoogle();
+                }}
+              >
                 <Google fontSize="large" />
               </IconButton>
-              <IconButton size="large">
+              <IconButton
+                size="large"
+                onClick={() => {
+                  handleSignInWithGithub();
+                }}
+              >
                 <GitHub fontSize="large" />
-              </IconButton>
-              <IconButton size="large">
-                <Microsoft fontSize="large" />
               </IconButton>
             </Box>
           </Box>

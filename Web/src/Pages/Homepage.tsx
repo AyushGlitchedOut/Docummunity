@@ -24,6 +24,8 @@ import ODFspreadsheetIcon from "../assets/Icons/ods.png";
 import ODFpresentationIcon from "../assets/Icons/odp.png";
 import { useEffect, useRef, useState } from "react";
 import Marquee from "react-fast-marquee";
+import { useFirebase } from "../services/firebase";
+import { useNavigate } from "react-router-dom";
 
 let supportedFileFormats: FileTypeIconDisplayProps[] = [
   {
@@ -39,54 +41,56 @@ let supportedFileFormats: FileTypeIconDisplayProps[] = [
   {
     extensionInfo: ".xml (XML File)",
     imagePath: XMLIcon,
-    linkToInfo: "",
+    linkToInfo: "https://en.wikipedia.org/wiki/XML",
   },
   {
     extensionInfo: ".md (Markdown File)",
     imagePath: MDIcon,
-    linkToInfo: "",
+    linkToInfo: "https://en.wikipedia.org/wiki/Markdown ",
   },
   {
     extensionInfo: ".docx (MS Word)",
     imagePath: MSwordIcon,
-    linkToInfo: "",
+    linkToInfo: "https://en.wikipedia.org/wiki/Office_Open_XML",
   },
   {
     extensionInfo: ".xlsx (MS Excel)",
     imagePath: MSexcelIcon,
-    linkToInfo: "",
+    linkToInfo: "https://en.wikipedia.org/wiki/Office_Open_XML",
   },
   {
     extensionInfo: ".pptx (MS Powerpoint)",
     imagePath: MSpowerpointIcon,
-    linkToInfo: "",
+    linkToInfo: "https://en.wikipedia.org/wiki/Office_Open_XML",
   },
   {
     extensionInfo: ".odt (Opendocument text)",
     imagePath: ODFtextIcon,
-    linkToInfo: "",
+    linkToInfo: "https://en.wikipedia.org/wiki/OpenDocument",
   },
   {
     extensionInfo: ".ods (Opendocument Spreadsheet)",
     imagePath: ODFspreadsheetIcon,
-    linkToInfo: "",
+    linkToInfo: "https://en.wikipedia.org/wiki/OpenDocument",
   },
   {
     extensionInfo: ".odp (Opendocument Presentation)",
     imagePath: ODFpresentationIcon,
-    linkToInfo: "",
+    linkToInfo: "https://en.wikipedia.org/wiki/OpenDocument",
   },
 ];
 
 function Homepage() {
   const [query, setQuery] = useState("");
   const infoRef = useRef<HTMLDivElement | null>(null);
+  const firebase = useFirebase();
+  const navigator = useNavigate();
+
   function scrollToInfo() {
     infoRef.current?.scrollIntoView({ behavior: "smooth" });
   }
   useEffect(() => {
     const withoutHash = window.location.hash.slice(1);
-    console.log(withoutHash);
     const query = withoutHash.split("?")[1];
 
     if (query) {
@@ -107,6 +111,12 @@ function Homepage() {
     }
     alert("Searching for:" + query);
   }
+
+  useEffect(() => {
+    if (firebase.isLoggedIn) {
+      navigator("/home");
+    }
+  }, [firebase]);
 
   return (
     <>
