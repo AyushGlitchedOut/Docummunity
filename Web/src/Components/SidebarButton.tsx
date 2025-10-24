@@ -2,7 +2,9 @@ import { Button, Typography } from "@mui/material";
 
 interface SidebarButtonProps {
   text: string;
-  Icon?: React.ReactNode;
+  Icon: React.ReactNode;
+  ActiveTab: boolean;
+  callback: Function;
 }
 
 function SidebarButton(args: SidebarButtonProps) {
@@ -15,9 +17,12 @@ function SidebarButton(args: SidebarButtonProps) {
         display: "flex",
         alignItems: "center",
         justifyContent: "space-evenly",
-        backgroundColor: "background.default",
-        color: "secondary.main",
+        backgroundColor: args.ActiveTab
+          ? "secondary.main"
+          : "background.default",
+        color: args.ActiveTab ? "primary.main" : "secondary.main",
       }}
+      onClick={() => args.callback()}
     >
       {args.Icon}
       <Typography sx={{ fontSize: "110%", width: "100%" }}>

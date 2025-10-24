@@ -19,7 +19,7 @@ function App() {
       }}
     >
       <HashRouter>
-        <Navbar isSignedIn={false}></Navbar>
+        <Navbar></Navbar>
         <Routes>
           <Route path="/" element={<Homepage />} />
           <Route path="/log_in" element={<LoginPage />} />

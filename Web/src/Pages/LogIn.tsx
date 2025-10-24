@@ -1,10 +1,4 @@
-import {
-  GitHub,
-  Google,
-  Microsoft,
-  Visibility,
-  VisibilityOff,
-} from "@mui/icons-material";
+import { GitHub, Google, Visibility, VisibilityOff } from "@mui/icons-material";
 import {
   Box,
   Button,
@@ -26,7 +20,6 @@ function LoginPage() {
   const [lightTheme, setLightTheme] = useState(true);
   const [capsLockOn, setCapsLockOn] = useState<boolean>();
   const [passwordShow, setpasswordShow] = useState<boolean>(false);
-  //Input values
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const navigator = useNavigate();

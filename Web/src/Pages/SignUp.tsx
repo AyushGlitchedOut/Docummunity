@@ -1,10 +1,4 @@
-import {
-  GitHub,
-  Google,
-  Microsoft,
-  Visibility,
-  VisibilityOff,
-} from "@mui/icons-material";
+import { GitHub, Google, Visibility, VisibilityOff } from "@mui/icons-material";
 import {
   Box,
   Button,

@@ -27,6 +27,12 @@ import Marquee from "react-fast-marquee";
 import { useFirebase } from "../services/firebase";
 import { useNavigate } from "react-router-dom";
 
+interface FileTypeIconDisplayProps {
+  imagePath: string;
+  extensionInfo: string;
+  linkToInfo: string;
+}
+
 let supportedFileFormats: FileTypeIconDisplayProps[] = [
   {
     extensionInfo: ".pdf (PDF file)",
@@ -233,12 +239,6 @@ function Homepage() {
       </Box>
     </>
   );
-}
-
-interface FileTypeIconDisplayProps {
-  imagePath: string;
-  extensionInfo: string;
-  linkToInfo: string;
 }
 
 function FileTypeIconDisplay(args: FileTypeIconDisplayProps) {

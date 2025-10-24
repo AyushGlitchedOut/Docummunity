@@ -80,7 +80,6 @@ export function FirebaseProvider(props: FirebaseProviderProps) {
   const LogOut = () => {
     signOut(Authorizer);
   };
-  console.log(user);
 
   return (
     <FirebaseContext.Provider
