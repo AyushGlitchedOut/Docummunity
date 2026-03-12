@@ -31,6 +31,12 @@ func main() {
 		})
 	})
 
+	router.POST("/message", func(ctx *gin.Context) {
+		body, _ := ctx.GetRawData()
+
+		log.Println(string(body))
+	})
+
 	if err := router.Run(port); err != nil {
 		log.Fatal("Failed to run server: ", err)
 	}
