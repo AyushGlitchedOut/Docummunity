@@ -7,3 +7,4 @@ build:
 
 clean:
 	@-rm -rf build
+	@-rm rf uploads

@@ -37,6 +37,15 @@ func main() {
 		log.Println(string(body))
 	})
 
+	router.POST("/file", func(ctx *gin.Context) {
+		file, err := ctx.FormFile("file")
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, nil)
+		}
+		ctx.SaveUploadedFile(file, "./uploads/"+file.Filename)
+		ctx.JSON(http.StatusOK, nil)
+	})
+
 	if err := router.Run(port); err != nil {
 		log.Fatal("Failed to run server: ", err)
 	}
