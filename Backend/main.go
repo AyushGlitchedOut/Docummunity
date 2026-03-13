@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -31,18 +32,22 @@ func main() {
 		})
 	})
 
-	router.POST("/message", func(ctx *gin.Context) {
-		body, _ := ctx.GetRawData()
-
-		log.Println(string(body))
-	})
-
-	router.POST("/file", func(ctx *gin.Context) {
+	router.POST("/upload", func(ctx *gin.Context) {
 		file, err := ctx.FormFile("file")
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, nil)
+			ctx.JSON(http.StatusInternalServerError, nil)
 		}
-		ctx.SaveUploadedFile(file, "./uploads/"+file.Filename)
+		ID := ctx.PostForm("ID")
+		fileEXT := strings.Split(file.Filename, ".")
+
+		if len(fileEXT) <= 1 {
+			ctx.SaveUploadedFile(file, "./uploads/"+ID)
+			ctx.JSON(http.StatusOK, nil)
+			return
+		}
+
+		ctx.SaveUploadedFile(file, "./uploads/"+ID+"."+fileEXT[len(fileEXT)-1])
+
 		ctx.JSON(http.StatusOK, nil)
 	})
 

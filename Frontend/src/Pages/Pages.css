@@ -1,0 +1,48 @@
+.create-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+.upload-container {
+  height: 10%;
+  width: 20%;
+  background-color: lightsalmon;
+  color: purple;
+  font-size: 150%;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 2%;
+}
+.upload-container:hover {
+  cursor: pointer;
+}
+.upload-container:active {
+  background-color: wheat;
+  transition: ease-out 0.1s;
+}
+.upload-title {
+  height: 5%;
+  width: 40%;
+}
+.upload-submit {
+  margin: 1%;
+  height: 7%;
+  width: 15%;
+  background-color: brown;
+  color: cyan;
+  font-weight: 900;
+  font-size: large;
+}
+.upload-submit:hover {
+  cursor: pointer;
+}
+.upload-submit:active {
+  background-color: wheat;
+  transition: ease-out 0.1s;
+}
