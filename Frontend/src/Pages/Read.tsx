@@ -1,4 +1,34 @@
+import { useState } from "react";
+import "./Pages.css";
+
 function ReadPage() {
-  return <div>Read</div>;
+  const [ID, setID] = useState<string>("");
+
+  async function downloadFile(): Promise<void> {
+    const a = document.createElement("a");
+    a.href = "http://localhost:8080/download/" + ID;
+    a.click();
+  }
+
+  return (
+    <div className="read-tab">
+      <input
+        placeholder="Enter ID here"
+        className="read-input"
+        value={ID}
+        onChange={(event) => {
+          setID(event.target.value);
+        }}
+      />
+      <button
+        className="read-download"
+        onClick={() => {
+          downloadFile();
+        }}
+      >
+        DOWNLOAD
+      </button>
+    </div>
+  );
 }
 export default ReadPage;

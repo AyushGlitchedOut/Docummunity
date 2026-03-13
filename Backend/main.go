@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/gin-contrib/cors"
@@ -32,6 +33,7 @@ func main() {
 		})
 	})
 
+	//CREATE
 	router.POST("/upload", func(ctx *gin.Context) {
 		file, err := ctx.FormFile("file")
 		if err != nil {
@@ -51,7 +53,38 @@ func main() {
 		ctx.JSON(http.StatusOK, nil)
 	})
 
+	//READ
+	router.GET("/download/:ID", func(ctx *gin.Context) {
+		ID := ctx.Param("ID")
+		fileName := FindFileFromDirectory(ID)
+		ctx.FileAttachment("./uploads/"+fileName, fileName)
+	})
+
 	if err := router.Run(port); err != nil {
 		log.Fatal("Failed to run server: ", err)
 	}
+}
+
+func FindFileFromDirectory(ID string) string {
+	files, err := os.ReadDir("./uploads")
+	if err != nil {
+		log.Fatal("Error!!")
+	}
+	for _, file := range files {
+		fileParts := strings.Split(file.Name(), ".")
+		if len(fileParts) <= 1 {
+			filename := strings.Join(fileParts, "")
+			if filename == ID {
+				return file.Name()
+			}
+		}
+		var fileNameArray []string
+		fileNameArray = append(fileNameArray, fileParts[:len(fileParts)-1]...)
+		filename := strings.Join(fileNameArray, ".")
+		if filename == ID {
+			return file.Name()
+		}
+
+	}
+	return ""
 }

@@ -6,7 +6,7 @@
 }
 .page-display {
   height: 80vh;
-  background-color: rgba(222, 202, 170, 0.7);
+  background-color: rgba(222, 202, 170, 1);
   width: 80%;
   display: flex;
   align-items: center;

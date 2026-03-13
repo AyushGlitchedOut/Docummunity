@@ -24,9 +24,9 @@ function CreatePage() {
         body: form,
       });
       if (response.status == 200) {
-        alert(true);
+        alert("File Uploaded");
       } else {
-        alert(false);
+        alert("Error!");
       }
     } catch (error) {
       alert("Something Went Wrong");
