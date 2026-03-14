@@ -80,3 +80,33 @@
 .read-download:hover {
   cursor: pointer;
 }
+
+/* DELETE PAGE STYLING */
+.delete-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+.delete-input {
+  height: 5%;
+  width: 40%;
+}
+.delete-submit {
+  margin: 1%;
+  height: 7%;
+  width: 15%;
+  background-color: brown;
+  color: cyan;
+  font-weight: 900;
+  font-size: large;
+}
+.delete-submit:hover {
+  cursor: pointer;
+}
+.delete-submit:active {
+  background-color: wheat;
+  transition: ease-out 0.1s;
+}

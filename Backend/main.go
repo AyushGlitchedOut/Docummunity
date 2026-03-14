@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	fmt.Println("DOCUMMUNITY BACKEND")
+	fmt.Println("-----------------DOCUMMUNITY BACKEND----------------------------")
 	port := ":8080"
 
 	router := gin.Default()
@@ -57,18 +57,54 @@ func main() {
 	router.GET("/download/:ID", func(ctx *gin.Context) {
 		ID := ctx.Param("ID")
 		fileName := FindFileFromDirectory(ID)
+		if fileName == "" {
+			ctx.Status(http.StatusNotFound)
+			return
+		}
 		ctx.FileAttachment("./uploads/"+fileName, fileName)
+	})
+
+	// UPDATE
+
+	// DELETE
+	router.DELETE("/delete/:ID", func(ctx *gin.Context) {
+		ID := ctx.Param("ID")
+		file := "./uploads/" + FindFileFromDirectory(ID)
+		err := os.Remove(file)
+		if err != nil {
+			if os.IsNotExist(err) {
+				ctx.Status(http.StatusNotFound)
+				return
+			}
+			ctx.Status(http.StatusInternalServerError)
+			return
+		}
+		ctx.Status(http.StatusOK)
+
 	})
 
 	if err := router.Run(port); err != nil {
 		log.Fatal("Failed to run server: ", err)
 	}
+	//
+	//
+	//
+	//
+	//
+	//DONT PUT ANYTHING HERE OR BELOW HERE
+	//
+	//
+	//
+
 }
 
 func FindFileFromDirectory(ID string) string {
+
 	files, err := os.ReadDir("./uploads")
+
 	if err != nil {
-		log.Fatal("Error!!")
+		log.Println("Something Went Wrong")
+		return ""
 	}
 	for _, file := range files {
 		fileParts := strings.Split(file.Name(), ".")
