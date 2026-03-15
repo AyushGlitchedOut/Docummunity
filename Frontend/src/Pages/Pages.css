@@ -27,7 +27,7 @@
   background-color: wheat;
   transition: ease-out 0.1s;
 }
-.upload-title {
+.upload-ID {
   height: 5%;
   width: 40%;
 }
@@ -107,6 +107,57 @@
   cursor: pointer;
 }
 .delete-submit:active {
+  background-color: wheat;
+  transition: ease-out 0.1s;
+}
+
+/* STYLES FOR UPDATE PAGE */
+.update-tab {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+}
+
+.update-ID {
+  height: 5%;
+  width: 40%;
+}
+.update-submit {
+  margin: 1%;
+  height: 7%;
+  width: 15%;
+  background-color: brown;
+  color: cyan;
+  font-weight: 900;
+  font-size: large;
+}
+.update-submit:hover {
+  cursor: pointer;
+}
+.update-submit:active {
+  background-color: wheat;
+  transition: ease-out 0.1s;
+}
+.update-container {
+  height: 10%;
+  width: 20%;
+  background-color: lightsalmon;
+  color: purple;
+  font-size: 150%;
+  font-weight: 900;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: Arial, Helvetica, sans-serif;
+  margin: 2%;
+}
+.update-container:hover {
+  cursor: pointer;
+}
+.update-container:active {
   background-color: wheat;
   transition: ease-out 0.1s;
 }

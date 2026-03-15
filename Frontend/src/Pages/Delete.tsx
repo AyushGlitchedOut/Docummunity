@@ -4,10 +4,18 @@ import "./Pages.css";
 function DeletePage() {
   const [ID, setID] = useState<string>("");
   async function handleDelete(): Promise<void> {
-    const response = await fetch("http://localhost:8080/delete/" + ID, {
-      method: "DELETE",
-    });
-    alert(response.status);
+    if (!ID) {
+      alert("No Id Provided");
+      return;
+    }
+    try {
+      const response = await fetch("http://localhost:8080/delete/" + ID, {
+        method: "DELETE",
+      });
+      alert(response.status);
+    } catch (error) {
+      alert("Something Went Wrong");
+    }
   }
   return (
     <div className="delete-tab">

@@ -5,6 +5,11 @@ function ReadPage() {
   const [ID, setID] = useState<string>("");
 
   async function downloadFile(): Promise<void> {
+    if (!ID) {
+      alert("No ID provided");
+      return;
+    }
+
     const a = document.createElement("a");
     a.href = "http://localhost:8080/download/" + ID;
     a.click();

@@ -51,7 +51,7 @@ function CreatePage() {
       <p>File Chosen: {file ? file.name : "No File Selected"}</p>
       <input
         placeholder="Enter Id here..."
-        className="upload-title"
+        className="upload-ID"
         maxLength={40}
         value={ID}
         onChange={(event) => {

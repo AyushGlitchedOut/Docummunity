@@ -37,20 +37,21 @@ func main() {
 	router.POST("/upload", func(ctx *gin.Context) {
 		file, err := ctx.FormFile("file")
 		if err != nil {
-			ctx.JSON(http.StatusInternalServerError, nil)
+			ctx.Status(http.StatusBadRequest)
+			return
 		}
 		ID := ctx.PostForm("ID")
 		fileEXT := strings.Split(file.Filename, ".")
 
 		if len(fileEXT) <= 1 {
 			ctx.SaveUploadedFile(file, "./uploads/"+ID)
-			ctx.JSON(http.StatusOK, nil)
+			ctx.Status(http.StatusOK)
 			return
 		}
 
 		ctx.SaveUploadedFile(file, "./uploads/"+ID+"."+fileEXT[len(fileEXT)-1])
 
-		ctx.JSON(http.StatusOK, nil)
+		ctx.Status(http.StatusOK)
 	})
 
 	//READ
@@ -65,6 +66,36 @@ func main() {
 	})
 
 	// UPDATE
+	router.PUT("/update/:ID", func(ctx *gin.Context) {
+
+		//Delete the original file first
+		ID := ctx.Param("ID")
+		file := "./uploads/" + FindFileFromDirectory(ID)
+		log.Println(file)
+		err := os.Remove(file)
+		if err != nil {
+			if os.IsNotExist(err) {
+				ctx.Status(http.StatusNotFound)
+				return
+			}
+			ctx.Status(http.StatusInternalServerError)
+			return
+		}
+
+		newFile, err := ctx.FormFile("file")
+		fileEXT := strings.Split(newFile.Filename, ".")
+
+		if len(fileEXT) <= 1 {
+			ctx.SaveUploadedFile(newFile, "./uploads/"+ID)
+			ctx.Status(http.StatusOK)
+			return
+		}
+
+		ctx.SaveUploadedFile(newFile, "./uploads/"+ID+"."+fileEXT[len(fileEXT)-1])
+
+		ctx.Status(http.StatusOK)
+
+	})
 
 	// DELETE
 	router.DELETE("/delete/:ID", func(ctx *gin.Context) {

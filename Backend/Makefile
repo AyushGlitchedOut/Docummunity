@@ -1,10 +1,9 @@
 .PHONY:build
 
 build:
-	@- mkdir -p build
-	go build -v -o build/App
-	./build/App
+	@- mkdir -p temp
+	go build -v -o temp/App
 
 clean:
-	@-rm -rf build
+	@-rm -rf temp
 	@-rm -rf uploads
