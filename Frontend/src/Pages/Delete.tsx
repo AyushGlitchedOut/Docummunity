@@ -9,7 +9,9 @@ function DeletePage() {
       return;
     }
     try {
-      const response = await fetch("http://localhost:8080/delete/" + ID, {
+      const requestURL =
+        "http://localhost:8080/delete/" + encodeURIComponent(ID);
+      const response = await fetch(requestURL, {
         method: "DELETE",
       });
       alert(response.status);

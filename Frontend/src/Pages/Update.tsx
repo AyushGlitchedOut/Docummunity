@@ -18,10 +18,13 @@ function UpdatePage() {
     fileForm.append("file", file);
 
     try {
-      const response = await fetch("http://localhost:8080/update/" + ID, {
-        method: "PUT",
-        body: fileForm,
-      });
+      const response = await fetch(
+        "http://localhost:8080/update/" + encodeURIComponent(ID),
+        {
+          method: "PUT",
+          body: fileForm,
+        },
+      );
 
       alert(response.status);
     } catch (error) {
