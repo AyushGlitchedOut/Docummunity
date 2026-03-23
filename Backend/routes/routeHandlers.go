@@ -4,12 +4,10 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
-	"github.com/AyushGlitchedOut/Docummunity/utilities"
 	"github.com/gin-gonic/gin"
 )
 
@@ -68,11 +66,6 @@ func HandleRead(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		if len(results) == 0 {
-			ctx.Status(http.StatusNotFound)
-			return
-		}
-
 		fileName := strings.Split(results[0].FILEPATH, "/")
 
 		ctx.FileAttachment(results[0].FILEPATH, fileName[len(fileName)-1])
@@ -80,30 +73,44 @@ func HandleRead(db *sql.DB) gin.HandlerFunc {
 }
 
 func HandleUpdate(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) { //Delete the original file first
+	return func(ctx *gin.Context) {
 		ID := ctx.Param("ID")
-		file := "./uploads/" + utilities.FindFileFromDirectory(ID)
-		log.Println(file)
-		err := os.Remove(file)
+		newFile, err := ctx.FormFile("file")
 		if err != nil {
-			if os.IsNotExist(err) {
-				ctx.Status(http.StatusNotFound)
-				return
-			}
+			log.Println(err)
+			ctx.Status(http.StatusBadRequest)
+			return
+		}
+
+		oldData, err := dbUtils.ReadData(ID, db)
+		if err != nil {
+			log.Println(err)
 			ctx.Status(http.StatusInternalServerError)
 			return
 		}
 
-		newFile, err := ctx.FormFile("file")
-		fileEXT := strings.Split(newFile.Filename, ".")
-
-		if len(fileEXT) <= 1 {
-			ctx.SaveUploadedFile(newFile, "./uploads/"+ID)
-			ctx.Status(http.StatusOK)
+		err = dbUtils.DeleteData(ID, db)
+		if err != nil {
+			log.Println(err)
+			ctx.Status(http.StatusInternalServerError)
 			return
 		}
 
-		ctx.SaveUploadedFile(newFile, "./uploads/"+ID+"."+fileEXT[len(fileEXT)-1])
+		err = ctx.SaveUploadedFile(newFile, oldData[0].FILEPATH)
+		if err != nil {
+			log.Println(err)
+			ctx.Status(http.StatusInternalServerError)
+			return
+		}
+
+		newData := dbUtils.TestData{TIMEID: int(time.Now().Unix()), NAME: oldData[0].NAME, FILEPATH: oldData[0].FILEPATH}
+
+		err = dbUtils.InsertData(newData, db)
+		if err != nil {
+			log.Println(err)
+			ctx.Status(http.StatusInternalServerError)
+			return
+		}
 
 		ctx.Status(http.StatusOK)
 	}

@@ -54,6 +54,10 @@ func ReadData(NAME string, db *sql.DB) ([]TestData, error) {
 		result = append(result, row)
 	}
 
+	if len(result) == 0 {
+		return result, fmt.Errorf("No Files Found!")
+	}
+
 	return result, nil
 }
 
