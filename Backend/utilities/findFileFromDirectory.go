@@ -8,12 +8,13 @@ import (
 
 func FindFileFromDirectory(ID string) string {
 
-	files, err := os.ReadDir("../uploads")
+	files, err := os.ReadDir("./uploads")
 
 	if err != nil {
 		log.Println("Something Went Wrong")
 		return ""
 	}
+
 	for _, file := range files {
 		fileParts := strings.Split(file.Name(), ".")
 		if len(fileParts) <= 1 {

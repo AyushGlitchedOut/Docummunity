@@ -1,69 +1,88 @@
 package main
 
 import (
-	"database/sql"
+	"fmt"
 	"log"
 	"os"
-	"strconv"
-	"time"
 
-	_ "github.com/mattn/go-sqlite3"
+	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
+	"github.com/AyushGlitchedOut/Docummunity/routes"
 )
 
 func main() {
 
+	//CREATE UPLOADS DIRECTORY
 	err := os.MkdirAll("./uploads", 0o755)
+	if err != nil {
+		log.Println(err)
+	}
 
-	// fmt.Println("-----------------DOCUMMUNITY BACKEND----------------------------")
-	// port := ":8080"
+	//Init DB
+	db, err := dbUtils.InitDatabase()
+	if err != nil {
+		log.Println(err)
+	}
 
-	// router := gin.Default()
+	fmt.Println("-----------------DOCUMMUNITY BACKEND----------------------------")
+	port := ":8080"
 
-	// //TEMPORARY CORS POLICY! REMOVE IN PRODUCTION
-	// router.Use(cors.New(cors.Config{
-	// 	AllowOrigins: []string{"http://localhost:3000"},
-	// 	AllowMethods: []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"},
-	// 	AllowHeaders: []string{"Origin",
-	// 		"Content-Length",
-	// 		"Content-Type",
-	// 		"Authorization"},
-	// }))
+	server := routes.InitServer(port, db)
 
-	// router.GET("/", routes.HandleGET)
-	// //CREATE
-	// router.POST("/upload", routes.HandleCREATE)
-	// //READ
-	// router.GET("/download/:ID", routes.HandleRead)
-	// // UPDATE
-	// router.PUT("/update/:ID", routes.HandleUpdate)
-	// // DELETE
-	// router.DELETE("/delete/:ID", routes.HandleDelete)
+	if err := server.Run(port); err != nil {
+		log.Fatal("Failed to run server: ", err)
+	}
 
-	// if err := router.Run(port); err != nil {
-	// 	log.Fatal("Failed to run server: ", err)
+	// db, err := sql.Open("sqlite3", "./uploads/data.db")
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
+	// defer db.Close()
+
+	// sqlCreate := `CREATE TABLE DATA (
+	// ID INTEGER NOT NULL PRIMARY KEY,
+	// NAME TEXT
+	// )`
+
+	// _, err = db.Exec(sqlCreate)
+	// if err != nil {
+	// 	log.Println(err)
 	// }
 
-	db, err := sql.Open("sqlite3", "./uploads/data.db")
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer db.Close()
+	// sqlInsertData := `INSERT INTO DATA VALUES (` + strconv.FormatInt(time.Now().Unix(), 10) + `,'AYUSH GUPTA');`
 
-	sqlCreate := `CREATE TABLE DATA (
-	ID INTEGER NOT NULL PRIMARY KEY,
-	NAME TEXT
-	)`
+	// _, err = db.Exec(sqlInsertData)
+	// if err != nil {
+	// 	log.Println(err)
+	// }
 
-	_, err = db.Exec(sqlCreate)
-	if err != nil {
-		log.Println(err)
-	}
+	// retrieveCommand := `SELECT ID, NAME FROM DATA;`
 
-	sqlInsertData := `INSERT INTO DATA VALUES (` + strconv.FormatInt(time.Now().Unix(), 10) + `,'AYUSH GUPTA');`
+	// results, err := db.Query(retrieveCommand)
 
-	_, err = db.Exec(sqlInsertData)
-	if err != nil {
-		log.Println(err)
-	}
+	// var rows []models.TestData
 
+	// for results.Next() {
+	// 	var ID int
+	// 	var NAME string
+
+	// 	err := results.Scan(&ID, &NAME)
+	// 	if err != nil {
+	// 		log.Println(err)
+	// 	}
+	// 	rows = append(rows, models.TestData{
+	// 		ID:   ID,
+	// 		NAME: NAME,
+	// 	})
+	// }
+
+	// for _, val := range rows {
+	// 	fmt.Println(val)
+	// }
+
+	// fmt.Println("-----------------------------------------------AFTERWARDS-----------------------")
+	// _, err = db.Exec("DELETE FROM DATA")
+
+	// if err != nil {
+	// 	log.Println()
+	// }
 }
