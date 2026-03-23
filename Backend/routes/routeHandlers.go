@@ -2,7 +2,6 @@ package routes
 
 import (
 	"database/sql"
-	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -27,6 +26,7 @@ func HandleCREATE(db *sql.DB) gin.HandlerFunc {
 		file, err := ctx.FormFile("file")
 		if err != nil {
 			log.Println(err)
+			ctx.Status(http.StatusBadRequest)
 			return
 		}
 
@@ -35,11 +35,12 @@ func HandleCREATE(db *sql.DB) gin.HandlerFunc {
 		err = ctx.SaveUploadedFile(file, path)
 		if err != nil {
 			log.Println(err)
+			ctx.Status(http.StatusInternalServerError)
 			return
 		}
 
 		data = dbUtils.TestData{
-			ID:       int(time.Now().Unix()),
+			TIMEID:   int(time.Now().Unix()),
 			NAME:     ID,
 			FILEPATH: path,
 		}
@@ -58,12 +59,23 @@ func HandleCREATE(db *sql.DB) gin.HandlerFunc {
 func HandleRead(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ID := ctx.Param("ID")
-		fileName := utilities.FindFileFromDirectory(ID)
-		if fileName == "" {
+
+		results, err := dbUtils.ReadData(ID, db)
+
+		if err != nil {
+			log.Println(err)
 			ctx.Status(http.StatusNotFound)
 			return
 		}
-		ctx.FileAttachment("./uploads/"+fileName, fileName)
+
+		if len(results) == 0 {
+			ctx.Status(http.StatusNotFound)
+			return
+		}
+
+		fileName := strings.Split(results[0].FILEPATH, "/")
+
+		ctx.FileAttachment(results[0].FILEPATH, fileName[len(fileName)-1])
 	}
 }
 
@@ -101,15 +113,10 @@ func HandleUpdate(db *sql.DB) gin.HandlerFunc {
 func HandleDelete(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		ID := ctx.Param("ID")
-		file := "./uploads/" + utilities.FindFileFromDirectory(ID)
-		err := os.Remove(file)
+		err := dbUtils.DeleteData(ID, db)
 		if err != nil {
-			if os.IsNotExist(err) {
-				ctx.Status(http.StatusNotFound)
-				return
-			}
+			log.Println(err)
 			ctx.Status(http.StatusInternalServerError)
-			fmt.Println(err)
 			return
 		}
 		ctx.Status(http.StatusOK)

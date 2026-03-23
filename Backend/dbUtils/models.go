@@ -1,7 +1,7 @@
 package dbUtils
 
 type TestData struct {
-	ID       int
+	TIMEID   int
 	NAME     string
 	FILEPATH string
 }

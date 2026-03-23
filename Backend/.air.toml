@@ -5,7 +5,7 @@ tmp_dir = "temp"
 cmd = "make"
 bin = "./temp/App"
 delay = 300
-exclude_dir = ["temp", "uploads ", "build"]
+exclude_dir = ["temp", "uploads", "build"]
 
 [screen]
 clear_on_rebuild = true
