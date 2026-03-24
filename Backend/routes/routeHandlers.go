@@ -67,7 +67,7 @@ func HandleRead(db *sql.DB) gin.HandlerFunc {
 		}
 
 		fileName := strings.Split(results[0].FILEPATH, "/")
-
+		ctx.Header("Access-Control-Expose-Headers", "Content-Disposition")
 		ctx.FileAttachment(results[0].FILEPATH, fileName[len(fileName)-1])
 	}
 }
