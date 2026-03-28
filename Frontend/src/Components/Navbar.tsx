@@ -1,9 +1,9 @@
 import { type JSX } from "react";
 import "./Navbar.css";
-import CreatePage from "../Pages/Create";
-import ReadPage from "../Pages/Read";
-import UpdatePage from "../Pages/Update";
-import DeletePage from "../Pages/Delete";
+import CreatePage from "../Pages/CRUD/Create";
+import ReadPage from "../Pages/CRUD/Read";
+import UpdatePage from "../Pages/CRUD/Update";
+import DeletePage from "../Pages/CRUD/Delete";
 
 function Navbar(args: {
   setPage: React.Dispatch<React.SetStateAction<JSX.Element>>;

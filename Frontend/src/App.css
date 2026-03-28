@@ -12,3 +12,22 @@
   align-items: center;
   justify-content: center;
 }
+
+.auth-button-container {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.auth-button {
+  height: 5vh;
+  margin: 1%;
+  width: 10%;
+  font-size: large;
+  font-weight: bold;
+  background-color: brown;
+  color: cyan;
+}
+.auth-button:hover {
+  cursor: pointer;
+}
