@@ -1,43 +1,98 @@
-import { type JSX } from "react";
-import "./Navbar.css";
-import CreatePage from "../Pages/CRUD/Create";
-import ReadPage from "../Pages/CRUD/Read";
-import UpdatePage from "../Pages/CRUD/Update";
-import DeletePage from "../Pages/CRUD/Delete";
-
-function Navbar(args: {
-  setPage: React.Dispatch<React.SetStateAction<JSX.Element>>;
-}) {
+import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
+import { useAuth } from "../auth/fireBaseContext";
+import AppIcon from "../assets/Docummunity.png";
+function Navbar() {
+  const auth = useAuth();
+  var userLoggedIn: boolean = false;
+  if (auth && auth.userLoggedIn) {
+    userLoggedIn = true;
+  }
   return (
-    <div className="navbar">
-      <button
-        className="navbar-button"
-        onClick={() => args.setPage(<CreatePage />)}
-      >
-        CREATE
-      </button>
+    <AppBar
+      position="static"
+      sx={(theme) => ({
+        height: "7vh",
+        boxShadow: `2px 2px 2px ${theme.palette.divider}`,
+        backgroundColor: theme.palette.background.paper,
+        display: "flex",
+        alignItems: "center",
+        flexDirection: "row",
+        justifyContent: "space-between",
+      })}
+    >
+      <Toolbar>
+        <Box
+          component="img"
+          src={AppIcon}
+          sx={(theme) => ({
+            height: 40,
+            marginRight: 2,
+            borderRadius: "100%",
+            border: `1px solid ${theme.palette.divider}`,
+          })}
+        />
+        <Typography
+          variant="h4"
+          sx={(theme) => ({
+            letterSpacing: 4,
+            fontWeight: 500,
+            color: theme.palette.text.primary,
+            cursor: "pointer",
+          })}
+        >
+          DOCUMMUNITY
+        </Typography>
+      </Toolbar>
+      {userLoggedIn ? <LoggedInToolBar /> : <LoggedOutToolBar />}
+    </AppBar>
+  );
+}
 
-      <button
-        className="navbar-button"
-        onClick={() => args.setPage(<ReadPage />)}
+function LoggedInToolBar() {
+  return <Toolbar>Logged In</Toolbar>;
+}
+function LoggedOutToolBar() {
+  return (
+    <Toolbar
+      sx={{ width: "40%", display: "flex", justifyContent: "space-between" }}
+    >
+      <Button
+        sx={(theme) => ({
+          cursor: "pointer",
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.text.primary,
+          fontSize: "clamp(50%, 100%, 150%)",
+          width: "30%",
+          margin: 2,
+        })}
       >
-        READ
-      </button>
-
-      <button
-        className="navbar-button"
-        onClick={() => args.setPage(<UpdatePage />)}
+        LOG-IN
+      </Button>
+      <Button
+        sx={(theme) => ({
+          cursor: "pointer",
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.text.primary,
+          fontSize: "clamp(50%, 100%, 150%)",
+          width: "30%",
+          margin: 2,
+        })}
       >
-        UPDATE
-      </button>
-
-      <button
-        className="navbar-button"
-        onClick={() => args.setPage(<DeletePage />)}
+        SIGN-UP
+      </Button>
+      <Button
+        sx={(theme) => ({
+          cursor: "pointer",
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.text.primary,
+          fontSize: "clamp(50%, 100%, 150%)",
+          width: "30%",
+          margin: 2,
+        })}
       >
-        DELETE
-      </button>
-    </div>
+        ABOUT US
+      </Button>
+    </Toolbar>
   );
 }
 
