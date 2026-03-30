@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import SideBar from "../../Components/SideBar";
 import { useAuth } from "../../auth/fireBaseContext";
 import { useEffect } from "react";
-import {useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 
 function UserHomePage() {
   const auth = useAuth();

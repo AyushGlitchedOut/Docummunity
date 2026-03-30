@@ -1,5 +1,7 @@
+import { Box } from "@mui/material";
+
 function AboutPage() {
-  return <div>About Page</div>;
+  return <Box sx={{ height: "93vh", marginTop: "7vh" }}>About Us</Box>;
 }
 
 export default AboutPage;

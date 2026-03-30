@@ -80,6 +80,7 @@ function LogInPage() {
             sx={(theme) => ({
               fontWeight: 600,
               color: theme.palette.text.secondary,
+              marginTop: "3%",
             })}
           >
             LOG-IN
@@ -109,7 +110,7 @@ function LogInPage() {
               <TextField
                 type="password"
                 id="password-input"
-                label="e.g. name123@mail.com"
+                label="e.g. first12@#$last"
                 variant="outlined"
                 sx={{}}
                 fullWidth

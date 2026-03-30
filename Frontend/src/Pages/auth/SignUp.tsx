@@ -4,11 +4,15 @@ import {
   doCreateUserWithEmailAndPassword,
   doSignInWithGoogle,
 } from "../../auth/auth";
+import GoogleIcon from "../../assets/google_logo.svg";
+import { Box, Typography, Container, TextField, Button } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 function SignUpPage() {
   const [email, setEmail] = useState<string>("");
   const [password, setPassword] = useState<string>("");
   const [passwordConfirm, setPasswordConfirm] = useState<string>("");
+  const navigator = useNavigate();
 
   async function handleSignUp(): Promise<void> {
     if (!email) {
@@ -29,7 +33,11 @@ function SignUpPage() {
     }
     try {
       const result = await doCreateUserWithEmailAndPassword(email, password);
-      console.log(result);
+
+      if (!result.user) {
+        return;
+      }
+      navigator("/home");
     } catch (error) {
       alert(error);
     }
@@ -38,7 +46,10 @@ function SignUpPage() {
   async function handleGoogleSignUp(): Promise<void> {
     try {
       const result = await doSignInWithGoogle();
-      console.log(result);
+      if (!result.user) {
+        return;
+      }
+      navigator("/home");
     } catch (error) {
       alert(error);
     }
@@ -46,54 +57,126 @@ function SignUpPage() {
 
   return (
     <form
-      className="signup-page"
       onSubmit={(event) => {
         event.preventDefault();
         handleSignUp();
       }}
     >
-      <h1>SignUp-Page</h1>
-      <div className="signup-page-inputs">
-        <label htmlFor="email">Enter Email-Id:</label>
-        <input
-          id="email"
-          value={email}
-          type="email"
-          onChange={(event) => {
-            setEmail(event.target.value);
-            event.target.reportValidity();
-          }}
-        />
-        <label htmlFor="pass">Enter Password:</label>
-        <input
-          id="pass"
-          type="password"
-          value={password}
-          onChange={(event) => {
-            setPassword(event.target.value);
-          }}
-        />
-        <label htmlFor="confirm-pass">Confirm Password:</label>
-        <input
-          id="confirm-pass"
-          type="password"
-          value={passwordConfirm}
-          onChange={(event) => {
-            setPasswordConfirm(event.target.value);
-          }}
-        />
-      </div>
-      <div className="signup-page-options">
-        <button type="submit">Log-In</button>
-        <button
-          onClick={() => {
-            handleGoogleSignUp();
-          }}
-          type="button"
+      <Box
+        sx={{
+          height: "93vh",
+          marginTop: "7vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <Box
+          sx={(theme) => ({
+            height: "90%",
+            width: "40%",
+            backgroundColor: theme.palette.secondary.main,
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: "20px",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            flexDirection: "column",
+            margin: "10px",
+          })}
         >
-          Login With Google
-        </button>
-      </div>
+          <Typography
+            variant="h3"
+            sx={(theme) => ({
+              fontWeight: 600,
+              color: theme.palette.text.secondary,
+              marginTop: "3%",
+            })}
+          >
+            SIGN-UP
+          </Typography>
+          <Container>
+            <Container>
+              <label htmlFor="email-input">
+                <Typography variant="h6">Email:</Typography>
+              </label>
+              <TextField
+                id="email-input"
+                label="e.g. name123@mail.com"
+                variant="outlined"
+                sx={{}}
+                fullWidth
+                color="primary"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                }}
+              />
+            </Container>
+            <Container>
+              <label htmlFor="password-input">
+                <Typography variant="h6">Password:</Typography>
+              </label>
+              <TextField
+                type="password"
+                id="password-input"
+                label="e.g. first12@#$last"
+                variant="outlined"
+                sx={{}}
+                fullWidth
+                color="primary"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                }}
+              />
+            </Container>
+            <Container>
+              <label htmlFor="password-confirm-input">
+                <Typography variant="h6">Password:</Typography>
+              </label>
+              <TextField
+                type="password"
+                id="password-confirm-input"
+                label="e.g. first12@#$last"
+                variant="outlined"
+                sx={{}}
+                fullWidth
+                color="primary"
+                value={passwordConfirm}
+                onChange={(event) => {
+                  setPasswordConfirm(event.target.value);
+                }}
+              />
+            </Container>
+          </Container>
+          <Container sx={{ margin: "10px" }}>
+            <Button fullWidth variant="contained" type="submit">
+              SIGN-UP
+            </Button>
+            <Button
+              sx={{
+                display: "flex",
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                backgroundColor: "white",
+                marginTop: "10px",
+              }}
+              fullWidth
+              type="button"
+              onClick={() => {
+                handleGoogleSignUp();
+              }}
+            >
+              <img src={GoogleIcon} alt="Google" width={30} height={30} />
+              <Typography variant="button" sx={{ margin: "5px" }}>
+                SIGN-UP WITH GOOGLE
+              </Typography>
+            </Button>
+          </Container>
+        </Box>
+      </Box>
     </form>
   );
 }
