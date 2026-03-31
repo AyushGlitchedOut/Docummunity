@@ -1,16 +1,7 @@
-import {
-  AppBar,
-  Avatar,
-  Box,
-  Button,
-  Toolbar,
-  Typography,
-} from "@mui/material";
+import { AppBar, Box, Button, Toolbar, Typography } from "@mui/material";
 import { useAuth } from "../auth/fireBaseContext";
 import AppIcon from "../assets/Docummunity.png";
 import { useNavigate } from "react-router-dom";
-import type { User } from "firebase/auth";
-import { doSignOut } from "../auth/auth";
 function Navbar() {
   const auth = useAuth();
   var userLoggedIn: boolean = false;
@@ -58,35 +49,15 @@ function Navbar() {
           DOCUMMUNITY
         </Typography>
       </Toolbar>
-      {userLoggedIn ? (
-        <LoggedInToolBar user={auth ? auth.currentUser : null} />
-      ) : (
-        <LoggedOutToolBar />
-      )}
+      {userLoggedIn ? <LoggedInToolBar /> : <LoggedOutToolBar />}
     </AppBar>
   );
 }
 
-type LoggedInToolBarProps = {
-  user: User | null;
-};
-
-function LoggedInToolBar({ user }: LoggedInToolBarProps) {
+function LoggedInToolBar() {
+  const navigator = useNavigate();
   return (
-    <Toolbar
-      sx={{ width: "40%", display: "flex", justifyContent: "space-between" }}
-    >
-      <Typography
-        variant="h5"
-        sx={(theme) => ({
-          fontWeight: 600,
-          color: theme.palette.text.secondary,
-        })}
-        noWrap
-      >
-        Welcome Back,{" "}
-        {user ? (user.displayName ? user.displayName : "User") : "User"}!
-      </Typography>
+    <Toolbar sx={{ width: "30%", display: "flex", justifyContent: "right" }}>
       <Button
         sx={(theme) => ({
           cursor: "pointer",
@@ -97,31 +68,48 @@ function LoggedInToolBar({ user }: LoggedInToolBarProps) {
           margin: 2,
         })}
         onClick={() => {
-          doSignOut();
+          navigator("/download");
         }}
       >
-        LOG-OUT
+        Download
       </Button>
-      {user ? (
-        user.photoURL ? (
-          <Avatar src={user.photoURL} />
-        ) : user.displayName ? (
-          <Avatar>{user.displayName}</Avatar>
-        ) : (
-          <Avatar src="" />
-        )
-      ) : (
-        <Avatar src="" />
-      )}
+      <Button
+        sx={(theme) => ({
+          cursor: "pointer",
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.text.primary,
+          fontSize: "clamp(50%, 100%, 150%)",
+          width: "30%",
+          margin: 2,
+        })}
+        onClick={() => {
+          navigator("/about");
+        }}
+      >
+        About
+      </Button>
     </Toolbar>
   );
 }
 function LoggedOutToolBar() {
   const navigator = useNavigate();
   return (
-    <Toolbar
-      sx={{ width: "40%", display: "flex", justifyContent: "space-between" }}
-    >
+    <Toolbar sx={{ width: "40%", display: "flex", justifyContent: "right" }}>
+      <Button
+        sx={(theme) => ({
+          cursor: "pointer",
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.text.primary,
+          fontSize: "clamp(50%, 100%, 150%)",
+          width: "30%",
+          margin: 2,
+        })}
+        onClick={() => {
+          navigator("/download");
+        }}
+      >
+        DOWNLOAD
+      </Button>
       <Button
         sx={(theme) => ({
           cursor: "pointer",

@@ -2,9 +2,9 @@ import { Box } from "@mui/material";
 import SideBar from "../../Components/SideBar";
 import { useAuth } from "../../auth/fireBaseContext";
 import { useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 
-function UserHomePage() {
+function UserSpace() {
   const auth = useAuth();
   const navigator = useNavigate();
   useEffect(() => {
@@ -40,9 +40,9 @@ function UserHomePage() {
           backgroundColor: theme.palette.secondary.main,
         })}
       >
-        Main Content
+        <Outlet />
       </Box>
     </Box>
   );
 }
-export default UserHomePage;
+export default UserSpace;

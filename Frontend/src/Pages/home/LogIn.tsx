@@ -3,7 +3,7 @@ import "./pages.css";
 import {
   doSignInWithGoogle,
   doSignInWithEmailAndPassword,
-} from "../../auth/auth";
+} from "../../auth/authFunctions";
 import { Box, Button, Container, TextField, Typography } from "@mui/material";
 import GoogleIcon from "../../assets/google_logo.svg";
 import { useNavigate } from "react-router-dom";

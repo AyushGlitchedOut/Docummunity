@@ -16,7 +16,7 @@ export const defaultTheme = createTheme({
       default: "#f2f6D5",
       paper: "#E4BE9E",
     },
-    divider: "#000000",
+    divider: "#777777",
   },
   typography: {
     fontFamily: "Inter, sans-serif",
