@@ -1,4 +1,4 @@
-package routes
+package server
 
 import (
 	"database/sql"
@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"firebase.google.com/go/auth"
 	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
 	"github.com/gin-gonic/gin"
 )
@@ -127,5 +128,12 @@ func HandleDelete(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 		ctx.Status(http.StatusOK)
+	}
+}
+
+func verifyLogin(firebaseAuth *auth.Client) gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
 	}
 }

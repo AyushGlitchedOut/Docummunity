@@ -1,5 +1,4 @@
 import { useState } from "react";
-import "./pages.css";
 import {
   doSignInWithGoogle,
   doSignInWithEmailAndPassword,
