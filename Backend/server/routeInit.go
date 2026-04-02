@@ -6,6 +6,7 @@ import (
 	"log"
 
 	firebase "firebase.google.com/go"
+	"github.com/AyushGlitchedOut/Docummunity/auth"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
@@ -39,7 +40,7 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *gin.Engine {
 
 	//Secure Routes
 	authRequired := router.Group("/")
-	authRequired.Use(authMiddleware(firebaseAuth))
+	authRequired.Use(auth.AuthMiddleware(firebaseAuth))
 	{
 		//CREATE
 		authRequired.POST("/upload", HandleCREATE(db))

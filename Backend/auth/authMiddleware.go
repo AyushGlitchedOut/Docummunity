@@ -1,4 +1,4 @@
-package server
+package auth
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func authMiddleware(firebaseAuth *auth.Client) gin.HandlerFunc {
+func AuthMiddleware(firebaseAuth *auth.Client) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		authHeader := ctx.GetHeader("Authorization")
 		token := strings.TrimPrefix(authHeader, "Bearer ")

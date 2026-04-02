@@ -5,3 +5,29 @@ type TestData struct {
 	NAME     string
 	FILEPATH string
 }
+
+type DATA struct {
+	TIME_UUID        string
+	NAME             string
+	FILEPATH         string
+	CREATOR_ID       string
+	PREVIEW_IMG_PATH string
+}
+type DataInfoUpdate struct {
+	NAME             string
+	PREVIEW_IMG_PATH string
+}
+
+type USER struct {
+	UID           string
+	EMAIL         string
+	DISPLAY_NAME  string
+	PROFILE_PIC   string
+	CREATION_DATE string
+	SETTINGS      string
+}
+type UserInfoUpdate struct {
+	DISPLAY_NAME string
+	PROFILE_PIC  string
+	SETTINGS     string
+}
