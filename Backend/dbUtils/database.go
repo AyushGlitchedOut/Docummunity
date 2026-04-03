@@ -10,21 +10,30 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-func InitializeDB(ctx context.Context) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./uploads/DATABASE.db")
-	if err != nil {
-		return nil, err
-	}
+// Constant for reserved deleted User
+var DeletedUserInfo = &USER{
+	UID:           "000",
+	EMAIL:         "none",
+	DISPLAY_NAME:  "[DELETED]",
+	PROFILE_PIC:   "none",
+	CREATION_DATE: "0/0/0",
+	SETTINGS:      "",
+}
 
-	//TODO: switch UID to a more efficient type
-	dataCreateCommand := `CREATE TABLE IF NOT EXISTS DATA (
-	TIME_UUID TEXT PRIMARY KEY, 
-	NAME TEXT NOT NULL,
-	FILEPATH TEXT NOT NULL,
-	CREATOR_ID TEXT NOT NULL,
-	PREVIEW_IMG_PATH TEXT
-	);`
-	_, err = db.ExecContext(ctx, dataCreateCommand)
+// Create a reserved-system user for assigning deleted users' files to
+func createDeletedUser(ctx context.Context, db *sql.DB) error {
+	//Change to INSERT IGNORE when porting to MySQL
+	createDeletedUserCommand := `INSERT OR IGNORE INTO USERS (UID, EMAIL, DISPLAY_NAME, PROFILE_PIC, CREATION_DATE, SETTINGS) VALUES (?, ?, ?, ?, ?, ?);`
+
+	_, err := db.ExecContext(ctx, createDeletedUserCommand, DeletedUserInfo.UID, DeletedUserInfo.EMAIL, DeletedUserInfo.DISPLAY_NAME, DeletedUserInfo.PROFILE_PIC, DeletedUserInfo.CREATION_DATE, DeletedUserInfo.SETTINGS)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func InitializeDB(ctx context.Context) (*sql.DB, error) {
+	db, err := sql.Open("sqlite3", "./uploads/DATABASE.db?_foreign_keys=on")
 	if err != nil {
 		return nil, err
 	}
@@ -40,6 +49,25 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 	);`
 
 	_, err = db.ExecContext(ctx, userCreateCommand)
+	if err != nil {
+		return nil, err
+	}
+
+	//TODO: switch UID to a more efficient type
+	dataCreateCommand := `CREATE TABLE IF NOT EXISTS DATA (
+	TIME_UUID TEXT PRIMARY KEY, 
+	NAME TEXT NOT NULL,
+	FILEPATH TEXT NOT NULL,
+	CREATOR_ID TEXT NOT NULL,
+	PREVIEW_IMG_PATH TEXT,
+	FOREIGN KEY (CREATOR_ID) REFERENCES USERS(UID)
+	);`
+	_, err = db.ExecContext(ctx, dataCreateCommand)
+	if err != nil {
+		return nil, err
+	}
+
+	err = createDeletedUser(ctx, db)
 	if err != nil {
 		return nil, err
 	}
@@ -62,23 +90,6 @@ func CreateUser(ctx context.Context, user *USER, db *sql.DB) error {
 	_, err := db.ExecContext(ctx, userInsertCommand, user.UID, user.EMAIL, user.DISPLAY_NAME, user.PROFILE_PIC, user.CREATION_DATE, user.SETTINGS)
 	if err != nil {
 		return err
-	}
-
-	return nil
-}
-
-func DeleteUser(ctx context.Context, UID string, db *sql.DB) error {
-
-	deleteUserCommand := `DELETE FROM USERS WHERE UID = ?`
-
-	results, err := db.ExecContext(ctx, deleteUserCommand, UID)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, err := results.RowsAffected()
-	if rowsAffected == 0 {
-		return fmt.Errorf("No User found with UID %s", UID)
 	}
 
 	return nil
@@ -112,6 +123,55 @@ func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *s
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("No Record found with UUID %s", UID)
+	}
+
+	return nil
+
+}
+func SearchUser(ctx context.Context, query string, db *sql.DB) ([]*USER, error) {
+	var users []*USER
+
+	return users, nil
+}
+
+func DeleteUser(ctx context.Context, UID string, db *sql.DB, keepRecords bool) error {
+	//Using Transaction to Avoid Inconsistency
+	transaction, err := db.BeginTx(ctx, nil)
+
+	if err != nil {
+		return fmt.Errorf("Error Starting Transaction: %w", err)
+	}
+	defer transaction.Rollback()
+
+	if keepRecords {
+		detachRecordsCommand := `UPDATE DATA SET CREATOR_ID = ? WHERE CREATOR_ID = ?`
+		_, err = transaction.ExecContext(ctx, detachRecordsCommand, DeletedUserInfo.UID, UID)
+		if err != nil {
+			return err
+		}
+	} else {
+		deleteRecordsCommand := `DELETE FROM DATA WHERE CREATOR_ID = ?`
+
+		_, err = transaction.ExecContext(ctx, deleteRecordsCommand, UID)
+		if err != nil {
+			return err
+		}
+	}
+
+	deleteUserCommand := `DELETE FROM USERS WHERE UID = ?`
+
+	results, err := transaction.ExecContext(ctx, deleteUserCommand, UID)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := results.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("No User found with UID %s", UID)
+	}
+	err = transaction.Commit()
+	if err != nil {
+		return fmt.Errorf("Failed to Commit Transaction %w", err)
 	}
 
 	return nil
@@ -190,6 +250,12 @@ func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, db *sql
 	}
 
 	return nil
+}
+
+func SearchRecord(ctx context.Context, query string, db *sql.DB) ([]*DATA, error) {
+	var data []*DATA
+
+	return data, nil
 }
 
 // .
