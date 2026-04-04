@@ -42,16 +42,7 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *gin.Engine {
 	authRequired := router.Group("/")
 	authRequired.Use(auth.AuthMiddleware(firebaseAuth))
 	{
-		//CREATE
-		authRequired.POST("/upload", HandleCREATE(db))
-		//READ
-		authRequired.GET("/download/:ID", HandleRead(db))
-		// UPDATE
-		authRequired.PUT("/update/:ID", HandleUpdate(db))
-		// DELETE
-		authRequired.DELETE("/delete/:ID", HandleDelete(db))
-		//Verification Prototype
-		authRequired.GET("/verify", verifyLogin(firebaseAuth))
+
 	}
 
 	return router

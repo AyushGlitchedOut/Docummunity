@@ -1,11 +1,5 @@
 package dbUtils
 
-type TestData struct {
-	TIMEID   int
-	NAME     string
-	FILEPATH string
-}
-
 type DATA struct {
 	TIME_UUID        string
 	NAME             string

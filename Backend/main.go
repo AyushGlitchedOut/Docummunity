@@ -20,13 +20,6 @@ func main() {
 	//CREATE UPLOADS DIRECTORY
 	utilities.CreateUploadsFolder()
 
-	//Init DB
-	//Temporary
-	db, err := dbUtils.InitDatabase()
-	if err != nil {
-		log.Println(err)
-	}
-
 	//Initialize DataBase
 	newDB, err := dbUtils.InitializeDB(context.Background())
 	if err != nil {
@@ -36,7 +29,7 @@ func main() {
 
 	fmt.Println("-----------------DOCUMMUNITY BACKEND----------------------------")
 
-	server := server.InitServer(port, db, firebase)
+	server := server.InitServer(port, newDB, firebase)
 
 	if err := server.Run(port); err != nil {
 		log.Fatal("Failed to run server: ", err)
