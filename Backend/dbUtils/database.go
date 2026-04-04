@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"strings"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -131,8 +132,39 @@ func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *s
 	return nil
 
 }
-func SearchUser(ctx context.Context, query string, db *sql.DB) ([]*USER, error) {
+
+func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER, error) {
 	var users []*USER
+
+	if len(query) == 0 {
+		return nil, fmt.Errorf("No Queries Provided")
+	}
+	searchCommand := `SELECT UID, EMAIL, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS FROM USERS WHERE `
+
+	var keywords []string
+	var args []any
+	for i := range query {
+		keywords = append(keywords, "DISPLAY_NAME LIKE ?")
+		args = append(args, "%"+query[i]+"%")
+	}
+
+	results, err := db.QueryContext(ctx, searchCommand+strings.Join(keywords, " OR "), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+
+	for results.Next() {
+		row := &USER{}
+		err = results.Scan(&row.UID, &row.EMAIL, &row.DISPLAY_NAME, &row.BIO, &row.PROFILE_PIC, &row.CREATION_DATE, &row.SETTINGS)
+		if err != nil {
+			return nil, err
+		}
+		users = append(users, row)
+	}
+	if results.Err() != nil {
+		return nil, results.Err()
+	}
 
 	return users, nil
 }
@@ -255,8 +287,46 @@ func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, db *sql
 	return nil
 }
 
-func SearchRecord(ctx context.Context, query string, db *sql.DB) ([]*DATA, error) {
+func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescription bool) ([]*DATA, error) {
 	var data []*DATA
+
+	searchCommand := `SELECT TIME_UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE `
+
+	if len(query) == 0 {
+		return nil, fmt.Errorf("No Queries Provided")
+	}
+
+	var keyWords []string
+	var args []any
+	if useDescription {
+		for i := range query {
+			keyWords = append(keyWords, "(NAME LIKE ? OR DESCRIPTION LIKE ?)")
+			args = append(args, "%"+query[i]+"%", "%"+query[i]+"%")
+		}
+	} else {
+		for i := range query {
+			keyWords = append(keyWords, "NAME LIKE ?")
+			args = append(args, "%"+query[i]+"%")
+		}
+	}
+
+	results, err := db.QueryContext(ctx, searchCommand+strings.Join(keyWords, " OR "), args...)
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+
+	for results.Next() {
+		row := &DATA{}
+		err := results.Scan(&row.TIME_UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH)
+		if err != nil {
+			return nil, err
+		}
+		data = append(data, row)
+	}
+	if results.Err() != nil {
+		return nil, results.Err()
+	}
 
 	return data, nil
 }
