@@ -1,7 +1,7 @@
 package dbUtils
 
 type DATA struct {
-	TIME_UUID        string
+	UUID             string
 	NAME             string
 	DESCRIPTION      string
 	FILEPATH         string
@@ -23,6 +23,16 @@ type USER struct {
 	CREATION_DATE string
 	SETTINGS      string
 }
+
+// Created as when more stuff will be stored per user, we need to omit personal info
+type USER_PUBLIC struct {
+	UID           string
+	DISPLAY_NAME  string
+	BIO           string
+	PROFILE_PIC   string
+	CREATION_DATE string
+}
+
 type UserInfoUpdate struct {
 	DISPLAY_NAME string
 	PROFILE_PIC  string

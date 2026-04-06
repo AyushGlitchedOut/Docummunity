@@ -56,7 +56,7 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 
 	//TODO: switch UID to a more efficient type
 	dataCreateCommand := `CREATE TABLE IF NOT EXISTS DATA (
-	TIME_UUID TEXT PRIMARY KEY, 
+	UUID TEXT PRIMARY KEY, 
 	NAME TEXT NOT NULL,
 	DESCRIPTION TEXT,
 	FILEPATH TEXT NOT NULL,
@@ -97,11 +97,26 @@ func CreateUser(ctx context.Context, user *USER, db *sql.DB) error {
 	return nil
 }
 
-func GetUserInfo(ctx context.Context, UID string, db *sql.DB) (*USER, error) {
+func GetUserAccount(ctx context.Context, UID string, db *sql.DB) (*USER, error) {
 	user := &USER{}
 	getUserCommand := `SELECT UID, EMAIL, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS FROM USERS WHERE UID = ?`
 	result := db.QueryRowContext(ctx, getUserCommand, UID)
 	err := result.Scan(&user.UID, &user.EMAIL, &user.DISPLAY_NAME, &user.BIO, &user.PROFILE_PIC, &user.CREATION_DATE, &user.SETTINGS)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, fmt.Errorf("No Rows Found")
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func GetUserInfo(ctx context.Context, UID string, db *sql.DB) (*USER_PUBLIC, error) {
+	user := &USER_PUBLIC{}
+	getUserCommand := `SELECT UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE FROM USERS WHERE UID = ?`
+	result := db.QueryRowContext(ctx, getUserCommand, UID)
+	err := result.Scan(&user.UID, &user.DISPLAY_NAME, &user.BIO, &user.PROFILE_PIC, &user.CREATION_DATE)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("No Rows Found")
@@ -131,13 +146,13 @@ func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *s
 
 }
 
-func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER, error) {
-	var users []*USER
+func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER_PUBLIC, error) {
+	var users []*USER_PUBLIC
 
 	if len(query) == 0 {
 		return nil, fmt.Errorf("No Queries Provided")
 	}
-	searchCommand := `SELECT UID, EMAIL, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS FROM USERS WHERE `
+	searchCommand := `SELECT UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE FROM USERS WHERE `
 
 	var keywords []string
 	var args []any
@@ -153,8 +168,8 @@ func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER, error
 	defer results.Close()
 
 	for results.Next() {
-		row := &USER{}
-		err = results.Scan(&row.UID, &row.EMAIL, &row.DISPLAY_NAME, &row.BIO, &row.PROFILE_PIC, &row.CREATION_DATE, &row.SETTINGS)
+		row := &USER_PUBLIC{}
+		err = results.Scan(&row.UID, &row.DISPLAY_NAME, &row.BIO, &row.PROFILE_PIC, &row.CREATION_DATE)
 		if err != nil {
 			return nil, err
 		}
@@ -167,8 +182,11 @@ func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER, error
 	return users, nil
 }
 
-func DeleteUser(ctx context.Context, UID string, db *sql.DB, keepRecords bool) error {
+func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool) error {
 	//Using Transaction to Avoid Inconsistency
+	if userID == "" {
+		return fmt.Errorf("No User ID Given")
+	}
 	transaction, err := db.BeginTx(ctx, nil)
 
 	if err != nil {
@@ -178,14 +196,14 @@ func DeleteUser(ctx context.Context, UID string, db *sql.DB, keepRecords bool) e
 
 	if keepRecords {
 		detachRecordsCommand := `UPDATE DATA SET CREATOR_ID = ? WHERE CREATOR_ID = ?`
-		_, err = transaction.ExecContext(ctx, detachRecordsCommand, DeletedUserInfo.UID, UID)
+		_, err = transaction.ExecContext(ctx, detachRecordsCommand, DeletedUserInfo.UID, userID)
 		if err != nil {
 			return err
 		}
 	} else {
 		deleteRecordsCommand := `DELETE FROM DATA WHERE CREATOR_ID = ?`
 
-		_, err = transaction.ExecContext(ctx, deleteRecordsCommand, UID)
+		_, err = transaction.ExecContext(ctx, deleteRecordsCommand, userID)
 		if err != nil {
 			return err
 		}
@@ -193,14 +211,14 @@ func DeleteUser(ctx context.Context, UID string, db *sql.DB, keepRecords bool) e
 
 	deleteUserCommand := `DELETE FROM USERS WHERE UID = ?`
 
-	results, err := transaction.ExecContext(ctx, deleteUserCommand, UID)
+	results, err := transaction.ExecContext(ctx, deleteUserCommand, userID)
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := results.RowsAffected()
+	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No User found with UID %s", UID)
+		return fmt.Errorf("No User found with UID %s", userID)
 	}
 	err = transaction.Commit()
 	if err != nil {
@@ -217,9 +235,9 @@ func DeleteUser(ctx context.Context, UID string, db *sql.DB, keepRecords bool) e
 // .
 // .
 func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
-	dataInsertCommand := `INSERT INTO DATA (TIME_UUID, NAME, DESCRIPTION ,FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH) VALUES (?, ?, ?, ?, ?);`
+	dataInsertCommand := `INSERT INTO DATA (UUID, NAME, DESCRIPTION ,FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH) VALUES (?, ?, ?, ?, ?, ?);`
 
-	if data.TIME_UUID == "" {
+	if data.UUID == "" {
 		return fmt.Errorf("No UUID Provided")
 	}
 	if data.NAME == "" {
@@ -232,18 +250,18 @@ func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
 		return fmt.Errorf("No Creator Provided")
 	}
 
-	_, err := db.ExecContext(ctx, dataInsertCommand, data.TIME_UUID, data.NAME, data.DESCRIPTION, data.FILEPATH, data.CREATOR_ID, data.PREVIEW_IMG_PATH)
+	_, err := db.ExecContext(ctx, dataInsertCommand, data.UUID, data.NAME, data.DESCRIPTION, data.FILEPATH, data.CREATOR_ID, data.PREVIEW_IMG_PATH)
 
 	return err
 }
-func DeleteRecord(ctx context.Context, UID string, db *sql.DB) error {
-	dataDeleteCommand := `DELETE FROM DATA WHERE TIME_UUID = ?`
-	results, err := db.ExecContext(ctx, dataDeleteCommand, UID)
+func DeleteRecord(ctx context.Context, UID string, creatorID string, db *sql.DB) error {
+	dataDeleteCommand := `DELETE FROM DATA WHERE UUID = ? AND CREATOR_ID = ?`
+	results, err := db.ExecContext(ctx, dataDeleteCommand, UID, creatorID)
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := results.RowsAffected()
+	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("No Record found with UUID %s", UID)
 	}
@@ -252,10 +270,10 @@ func DeleteRecord(ctx context.Context, UID string, db *sql.DB) error {
 }
 func GetRecord(ctx context.Context, UID string, db *sql.DB) (*DATA, error) {
 	data := &DATA{}
-	getRecordQuery := `SELECT TIME_UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE TIME_UUID = ?`
+	getRecordQuery := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE UUID = ?`
 
 	result := db.QueryRowContext(ctx, getRecordQuery, UID)
-	err := result.Scan(&data.TIME_UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
+	err := result.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("No Rows Found")
@@ -265,19 +283,23 @@ func GetRecord(ctx context.Context, UID string, db *sql.DB) (*DATA, error) {
 
 	return data, nil
 }
-func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, db *sql.DB) error {
-	updateQuery := `UPDATE DATA SET NAME = ?,DESCRIPTION = ?,PREVIEW_IMG_PATH = ? WHERE TIME_UUID = ?`
+func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creatorID string, db *sql.DB) error {
+	updateQuery := `UPDATE DATA SET NAME = ?,DESCRIPTION = ?,PREVIEW_IMG_PATH = ? WHERE UUID = ? AND CREATOR_ID = ?`
+
+	if creatorID == "" {
+		return fmt.Errorf("No Creator UID provided")
+	}
 
 	if data.NAME == "" {
 		return fmt.Errorf("Name Not provided for Updating")
 	}
 
-	results, err := db.ExecContext(ctx, updateQuery, data.NAME, data.DESCRIPTION, data.PREVIEW_IMG_PATH, UID)
+	results, err := db.ExecContext(ctx, updateQuery, data.NAME, data.DESCRIPTION, data.PREVIEW_IMG_PATH, UID, creatorID)
 	if err != nil {
 		return err
 	}
 
-	rowsAffected, err := results.RowsAffected()
+	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("No Record found with UUID %s", UID)
 	}
@@ -288,7 +310,7 @@ func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, db *sql
 func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescription bool) ([]*DATA, error) {
 	var data []*DATA
 
-	searchCommand := `SELECT TIME_UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE `
+	searchCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE `
 
 	if len(query) == 0 {
 		return nil, fmt.Errorf("No Queries Provided")
@@ -316,7 +338,7 @@ func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescriptio
 
 	for results.Next() {
 		row := &DATA{}
-		err := results.Scan(&row.TIME_UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH)
+		err := results.Scan(&row.UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH)
 		if err != nil {
 			return nil, err
 		}

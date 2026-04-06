@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
 
@@ -20,7 +19,8 @@ func AuthMiddleware(firebaseAuth *auth.Client) gin.HandlerFunc {
 			ctx.Abort()
 			return
 		}
-		fmt.Println(token)
-		ctx.Set("user_token", user)
+		ctx.Set("tokenUID", user.UID)
+
+		ctx.Next()
 	}
 }

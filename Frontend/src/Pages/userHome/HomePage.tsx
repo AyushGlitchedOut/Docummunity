@@ -20,7 +20,8 @@ function HomePage() {
 
     const token = await auth.currentUser.getIdToken();
 
-    const result = await fetch("http://localhost:8080/verify", {
+    const result = await fetch("http://localhost:8080/test", {
+      method: "POST",
       headers: {
         Authorization: `Bearer ${token}`,
       },
