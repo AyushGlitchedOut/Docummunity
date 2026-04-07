@@ -16,7 +16,6 @@ type DataInfoUpdate struct {
 
 type USER struct {
 	UID           string
-	EMAIL         string
 	DISPLAY_NAME  string
 	BIO           string
 	PROFILE_PIC   string

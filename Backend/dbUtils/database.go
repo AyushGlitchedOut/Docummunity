@@ -12,7 +12,6 @@ import (
 // Constant for reserved deleted User
 var DeletedUserInfo = &USER{
 	UID:           "000",
-	EMAIL:         "none",
 	BIO:           "Deleted User",
 	DISPLAY_NAME:  "[DELETED]",
 	PROFILE_PIC:   "none",
@@ -23,9 +22,9 @@ var DeletedUserInfo = &USER{
 // Create a reserved-system user for assigning deleted users' files to
 func createDeletedUser(ctx context.Context, db *sql.DB) error {
 	//Change to INSERT IGNORE when porting to MySQL
-	createDeletedUserCommand := `INSERT OR IGNORE INTO USERS (UID, EMAIL, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS) VALUES (?, ?, ?, ?, ?, ?, ?);`
+	createDeletedUserCommand := `INSERT OR IGNORE INTO USERS (UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS) VALUES (?, ?, ?, ?, ?, ?);`
 
-	_, err := db.ExecContext(ctx, createDeletedUserCommand, DeletedUserInfo.UID, DeletedUserInfo.EMAIL, DeletedUserInfo.DISPLAY_NAME, DeletedUserInfo.BIO, DeletedUserInfo.PROFILE_PIC, DeletedUserInfo.CREATION_DATE, DeletedUserInfo.SETTINGS)
+	_, err := db.ExecContext(ctx, createDeletedUserCommand, DeletedUserInfo.UID, DeletedUserInfo.DISPLAY_NAME, DeletedUserInfo.BIO, DeletedUserInfo.PROFILE_PIC, DeletedUserInfo.CREATION_DATE, DeletedUserInfo.SETTINGS)
 	if err != nil {
 		return err
 	}
@@ -41,7 +40,6 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 	//TODO: switch Time and Settings to a more efficient type
 	userCreateCommand := `CREATE TABLE IF NOT EXISTS USERS (
 		UID TEXT PRIMARY KEY, 
-		EMAIL TEXT,
 		DISPLAY_NAME TEXT,
 		BIO TEXT,
 		PROFILE_PIC TEXT,
@@ -78,18 +76,18 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 }
 
 func CreateUser(ctx context.Context, user *USER, db *sql.DB) error {
-	userInsertCommand := `INSERT INTO USERS (UID, EMAIL, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS) VALUES (?, ?, ?, ?, ?, ?, ?);`
+	userInsertCommand := `INSERT INTO USERS (UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS) VALUES (?, ?, ?, ?, ?, ?);`
 	if user.UID == "" {
 		return fmt.Errorf("NO UID Provided")
 	}
 	if user.CREATION_DATE == "" {
 		return fmt.Errorf("NO Creation Date Provided")
 	}
-	if user.EMAIL == "" && user.DISPLAY_NAME == "" {
-		return fmt.Errorf("Bad User")
+	if user.DISPLAY_NAME == "" {
+		user.DISPLAY_NAME = "[Unknown]"
 	}
 
-	_, err := db.ExecContext(ctx, userInsertCommand, user.UID, user.EMAIL, user.DISPLAY_NAME, user.BIO, user.PROFILE_PIC, user.CREATION_DATE, user.SETTINGS)
+	_, err := db.ExecContext(ctx, userInsertCommand, user.UID, user.DISPLAY_NAME, user.BIO, user.PROFILE_PIC, user.CREATION_DATE, user.SETTINGS)
 	if err != nil {
 		return err
 	}
@@ -99,9 +97,9 @@ func CreateUser(ctx context.Context, user *USER, db *sql.DB) error {
 
 func GetUserAccount(ctx context.Context, UID string, db *sql.DB) (*USER, error) {
 	user := &USER{}
-	getUserCommand := `SELECT UID, EMAIL, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS FROM USERS WHERE UID = ?`
+	getUserCommand := `SELECT UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS FROM USERS WHERE UID = ?`
 	result := db.QueryRowContext(ctx, getUserCommand, UID)
-	err := result.Scan(&user.UID, &user.EMAIL, &user.DISPLAY_NAME, &user.BIO, &user.PROFILE_PIC, &user.CREATION_DATE, &user.SETTINGS)
+	err := result.Scan(&user.UID, &user.DISPLAY_NAME, &user.BIO, &user.PROFILE_PIC, &user.CREATION_DATE, &user.SETTINGS)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, fmt.Errorf("No Rows Found")
