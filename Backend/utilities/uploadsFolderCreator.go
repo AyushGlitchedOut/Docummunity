@@ -5,6 +5,14 @@ import (
 	"os"
 )
 
+const (
+	UploadsDirectory    = "./uploads"
+	DBLocation          = UploadsDirectory + "/DATABASE.db"
+	ProfilePicDirectory = UploadsDirectory + "/PROFILE_PIC/"
+	FileDirectory       = UploadsDirectory + "/FILES/"
+	PreviewImgDirectory = UploadsDirectory + "/PREVIEW/"
+)
+
 func CreateUploadsFolder() {
 	err := os.MkdirAll("./uploads", 0o755)
 	if err != nil {
@@ -12,19 +20,28 @@ func CreateUploadsFolder() {
 	}
 
 	//check if file exists or not
-	_, err = os.Stat("./uploads/DATABASE.db")
+	_, err = os.Stat(DBLocation)
 	if err == nil {
 		log.Println("DB already exists")
-		return
-	}
-	if !os.IsNotExist(err) {
-		log.Fatal("Error Creating File")
+	} else {
+		file, err := os.Create(DBLocation)
+		if err != nil {
+			log.Fatal(err)
+		}
+		file.Close()
 	}
 
-	file, err := os.Create("./uploads/DATABASE.db")
+	err = os.MkdirAll(ProfilePicDirectory, 0o755)
 	if err != nil {
 		log.Fatal(err)
 	}
-	file.Close()
+	err = os.MkdirAll(FileDirectory, 0o755)
+	if err != nil {
+		log.Fatal(err)
+	}
+	err = os.MkdirAll(PreviewImgDirectory, 0o755)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 }

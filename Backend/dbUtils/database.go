@@ -77,15 +77,6 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 
 func CreateUser(ctx context.Context, user *USER, db *sql.DB) error {
 	userInsertCommand := `INSERT INTO USERS (UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS) VALUES (?, ?, ?, ?, ?, ?);`
-	if user.UID == "" {
-		return fmt.Errorf("NO UID Provided")
-	}
-	if user.CREATION_DATE == "" {
-		return fmt.Errorf("NO Creation Date Provided")
-	}
-	if user.DISPLAY_NAME == "" {
-		user.DISPLAY_NAME = "[Unknown]"
-	}
 
 	_, err := db.ExecContext(ctx, userInsertCommand, user.UID, user.DISPLAY_NAME, user.BIO, user.PROFILE_PIC, user.CREATION_DATE, user.SETTINGS)
 	if err != nil {

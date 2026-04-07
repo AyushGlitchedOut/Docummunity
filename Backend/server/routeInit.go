@@ -46,7 +46,7 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *gin.Engine {
 
 	//User Routes
 	userRoutes := router.Group("/api/user")
-	// userRoutes.Use(auth.AuthMiddleware(firebaseAuth))
+	userRoutes.Use(auth.AuthMiddleware(firebaseAuth))
 	{
 		userRoutes.GET("/ACCOUNT", HandleUserACCOUNT(db))
 		userRoutes.POST("/CREATE", HandleUserCREATE(db))
