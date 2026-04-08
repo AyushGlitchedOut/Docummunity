@@ -16,7 +16,9 @@ func AuthMiddleware(firebaseAuth *auth.Client) gin.HandlerFunc {
 
 		user, err := firebaseAuth.VerifyIDToken(ctx.Request.Context(), token)
 		if err != nil {
-			ctx.Status(http.StatusUnauthorized)
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Access Denied",
+			})
 			ctx.Abort()
 			return
 		}

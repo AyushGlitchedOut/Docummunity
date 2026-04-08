@@ -3,7 +3,6 @@ package server
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"log"
 
 	firebase "firebase.google.com/go"
@@ -12,14 +11,22 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const (
+	maxPerRequestServerMemorySize = 64 << 20
+
+	maxPictureSize  = 2 << 20  //2mb
+	maxDocumentSize = 40 << 20 //40mb
+)
+
+// TODO: Handle Timeouts by using a http.Server and attaching gin's Eouter to it, with configuration for large upload and all.
 func InitServer(port string, db *sql.DB, firebase *firebase.App) *gin.Engine {
 	router := gin.New()
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
+	router.MaxMultipartMemory = maxPerRequestServerMemorySize
 
 	//Get Auth Function from Firebase App
 	firebaseAuth, err := firebase.Auth(context.Background())
-	fmt.Println("IGNORE: ", firebaseAuth.TenantManager)
 	if err != nil {
 		log.Fatal("Error Configuring Firebase Admin SDK")
 	}
@@ -57,7 +64,7 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *gin.Engine {
 
 	//Data Routes
 	dataRoutes := router.Group("/api/data")
-	// dataRoutes.Use(auth.AuthMiddleware(firebaseAuth))
+	dataRoutes.Use(auth.AuthMiddleware(firebaseAuth))
 	{
 		dataRoutes.POST("/CREATE", HandleDataCREATE(db))
 		dataRoutes.PATCH("/UPDATE", HandleDataUPDATE(db))

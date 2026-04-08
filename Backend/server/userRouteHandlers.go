@@ -2,9 +2,9 @@ package server
 
 import (
 	"database/sql"
-	"fmt"
 	"net/http"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -12,22 +12,6 @@ import (
 	"github.com/AyushGlitchedOut/Docummunity/utilities"
 	"github.com/gin-gonic/gin"
 )
-
-const (
-	maxProfilePictureSize = 2 << 20 //2mb
-)
-
-func HandlePING(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Server Active!",
-	})
-}
-
-// Test functions
-func VerifyTest(ctx *gin.Context) {
-	token, _ := ctx.Get("tokenUID")
-	fmt.Println("Token: ", token)
-}
 
 // User Functions
 func HandleUserGET(db *sql.DB) gin.HandlerFunc {
@@ -48,35 +32,21 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		user := &dbUtils.USER{}
 
 		//Obtain UID From JWT
-		UID, exists := ctx.Get("tokenUID")
-		if !exists {
+		UID, err := utilities.ParseToken(ctx)
+		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "Error getting UID",
+				"error": err.Error(),
 			})
 			return
 		}
-		UIDstr, ok := UID.(string)
-		if !ok {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "Error getting UID",
-			})
-			return
-		}
-		user.UID = UIDstr
-		//Validation
-		if user.UID == "" {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "No UID Provided",
-			})
-			return
-		}
+		user.UID = UID
 
 		//Profile Pic Saving logic
 		pictureFile, err := ctx.FormFile("PROFILE_PIC")
 		if err == nil && pictureFile != nil {
-			if pictureFile.Size > maxProfilePictureSize {
-				ctx.JSON(http.StatusBadRequest, gin.H{
-					"error": "Profile Picture should be less than 2mb",
+			if pictureFile.Size > maxPictureSize {
+				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+					"error": "Profile Picture should be less than " + strconv.Itoa(maxPictureSize>>20) + "mb!",
 				})
 				return
 			}
@@ -144,30 +114,4 @@ func HandleUserSEARCH(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 	}
-}
-
-// Data Functions
-func HandleDataGET(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
-		ctx.JSON(http.StatusOK, gin.H{
-			"message": "Fetch Data",
-		})
-	}
-}
-
-func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
-	//NOTE: Get Creator_ID from JWT, not the request itself, since otherwise anyone can create records on anyone's behalf
-	return func(ctx *gin.Context) {}
-}
-
-func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {}
-}
-
-func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {}
-}
-
-func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {}
 }

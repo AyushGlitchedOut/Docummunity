@@ -226,19 +226,6 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
 	dataInsertCommand := `INSERT INTO DATA (UUID, NAME, DESCRIPTION ,FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH) VALUES (?, ?, ?, ?, ?, ?);`
 
-	if data.UUID == "" {
-		return fmt.Errorf("No UUID Provided")
-	}
-	if data.NAME == "" {
-		return fmt.Errorf("No Name Provided")
-	}
-	if data.FILEPATH == "" {
-		return fmt.Errorf("No File Provided")
-	}
-	if data.CREATOR_ID == "" {
-		return fmt.Errorf("No Creator Provided")
-	}
-
 	_, err := db.ExecContext(ctx, dataInsertCommand, data.UUID, data.NAME, data.DESCRIPTION, data.FILEPATH, data.CREATOR_ID, data.PREVIEW_IMG_PATH)
 
 	return err
