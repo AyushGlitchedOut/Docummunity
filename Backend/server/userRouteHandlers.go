@@ -14,6 +14,7 @@ import (
 )
 
 // User Functions
+
 func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 	//When fetching information about another user
 	return func(ctx *gin.Context) {
@@ -22,9 +23,17 @@ func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 		})
 	}
 }
+
 func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 	//For when the User requires their own information (including sensitive)
 	return func(ctx *gin.Context) {}
+}
+
+func HandleUserRecordsGET(db *sql.DB) gin.HandlerFunc {
+
+	return func(ctx *gin.Context) {
+
+	}
 }
 
 func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {

@@ -116,6 +116,35 @@ func GetUserInfo(ctx context.Context, UID string, db *sql.DB) (*USER_PUBLIC, err
 	return user, nil
 }
 
+// To get the records created by a specific user
+func GetUserRecords(ctx context.Context, UID string, db *sql.DB) ([]*DATA, error) {
+	var records []*DATA
+
+	getUserRecordsCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE CREATOR_ID = ?`
+
+	results, err := db.QueryContext(ctx, getUserRecordsCommand, UID)
+	if err != nil {
+		return nil, err
+	}
+	defer results.Close()
+
+	for results.Next() {
+		data := &DATA{}
+
+		err := results.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
+		if err != nil {
+			return nil, err
+		}
+		records = append(records, data)
+
+	}
+	if results.Err() != nil {
+		return nil, results.Err()
+	}
+
+	return records, nil
+}
+
 func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *sql.DB) error {
 	if data.DISPLAY_NAME == "" {
 		return fmt.Errorf("No Name Provided")
