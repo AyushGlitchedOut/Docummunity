@@ -2,6 +2,7 @@ package server
 
 import (
 	"database/sql"
+	"encoding/json"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -16,22 +17,124 @@ import (
 // User Functions
 
 func HandleUserGET(db *sql.DB) gin.HandlerFunc {
-	//When fetching information about another user
 	return func(ctx *gin.Context) {
+		publicUserInfo := &dbUtils.USER_PUBLIC{}
+
+		uid := ctx.Param("uid")
+
+		if uid == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No UID found for User",
+			})
+		}
+
+		result, err := dbUtils.GetUserInfo(ctx, uid, db)
+		if err != nil {
+			if strings.Contains(err.Error(), "No Rows Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No User Found",
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Something Went Wrong!",
+			})
+			return
+		}
+		publicUserInfo = result
+
 		ctx.JSON(http.StatusOK, gin.H{
-			"message": "Fetch User",
+			"message": publicUserInfo,
 		})
 	}
 }
 
 func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 	//For when the User requires their own information (including sensitive)
-	return func(ctx *gin.Context) {}
+	return func(ctx *gin.Context) {
+
+		userAccountInfo := &dbUtils.USER{}
+
+		token, err := utilities.ParseToken(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		result, err := dbUtils.GetUserAccount(ctx, token, db)
+		if err != nil {
+			if strings.Contains(err.Error(), "No Rows Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No User Found",
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Something Went Wrong!",
+			})
+			return
+		}
+		userAccountInfo = result
+
+		//Parse settings
+		rawSettings := result.SETTINGS
+		var settings map[string]any
+		err = json.Unmarshal([]byte(rawSettings), &settings)
+		if err != nil {
+			ctx.JSON(http.StatusOK, gin.H{
+				"error":   "Error parsing Settings, sending Unparsed",
+				"message": userAccountInfo,
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": map[string]any{
+				"UID":           userAccountInfo.UID,
+				"DISPLAY_NAME":  userAccountInfo.DISPLAY_NAME,
+				"BIO":           userAccountInfo.BIO,
+				"PROFILE_PIC":   userAccountInfo.PROFILE_PIC,
+				"CREATION_DATE": userAccountInfo.CREATION_DATE,
+				"SETTINGS":      settings,
+			},
+		})
+
+	}
 }
 
 func HandleUserRecordsGET(db *sql.DB) gin.HandlerFunc {
-
 	return func(ctx *gin.Context) {
+		var userRecords []*dbUtils.DATA
+
+		uid := ctx.Param("uid")
+		if uid == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No UID found for User",
+			})
+			return
+		}
+
+		results, err := dbUtils.GetUserRecords(ctx, uid, db)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		userRecords = results
+
+		if userRecords == nil {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error": "No records Found for that User!",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": userRecords,
+		})
 
 	}
 }

@@ -45,10 +45,11 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *gin.Engine {
 	freeRoutes := router.Group("/api")
 	{
 		freeRoutes.GET("/", HandlePING)
-		freeRoutes.GET("/user/SEARCH", HandleUserSEARCH(db))
-		freeRoutes.GET("/user/GET", HandleUserGET(db))
-		freeRoutes.GET("/data/SEARCH", HandleDataSEARCH(db))
-		freeRoutes.GET("/data/GET", HandleDataGET(db))
+		freeRoutes.GET("/user/SEARCH/:query", HandleUserSEARCH(db))
+		freeRoutes.GET("/user/GET/:uid", HandleUserGET(db))
+		freeRoutes.GET("/data/SEARCH/:query", HandleDataSEARCH(db))
+		freeRoutes.GET("/data/GET/:uuid", HandleDataGET(db))
+		freeRoutes.GET("/user/RECORDS/:uid", HandleUserRecordsGET(db))
 	}
 
 	//User Routes
