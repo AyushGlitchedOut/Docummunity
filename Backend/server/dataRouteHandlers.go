@@ -29,9 +29,36 @@ func VerifyTest(ctx *gin.Context) {
 // Data Functions
 func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		data := &dbUtils.DATA{}
+
+		uuid := ctx.Param("uuid")
+
+		if uuid == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No uuid found for the record",
+			})
+			return
+		}
+
+		results, err := dbUtils.GetRecord(ctx, uuid, db)
+		if err != nil {
+			if strings.Contains(err.Error(), "No Rows Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "The record doesn't exist",
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		data = results
+
 		ctx.JSON(http.StatusOK, gin.H{
-			"message": "Fetch Data",
+			"message": data,
 		})
+
 	}
 }
 

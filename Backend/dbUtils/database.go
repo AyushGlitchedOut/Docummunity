@@ -273,11 +273,11 @@ func DeleteRecord(ctx context.Context, UID string, creatorID string, db *sql.DB)
 
 	return nil
 }
-func GetRecord(ctx context.Context, UID string, db *sql.DB) (*DATA, error) {
+func GetRecord(ctx context.Context, UUID string, db *sql.DB) (*DATA, error) {
 	data := &DATA{}
 	getRecordQuery := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE UUID = ?`
 
-	result := db.QueryRowContext(ctx, getRecordQuery, UID)
+	result := db.QueryRowContext(ctx, getRecordQuery, UUID)
 	err := result.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
 	if err != nil {
 		if err == sql.ErrNoRows {
