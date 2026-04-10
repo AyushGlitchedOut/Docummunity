@@ -4,9 +4,9 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"log"
+	"os"
 	"strings"
-
-	_ "github.com/mattn/go-sqlite3"
 )
 
 // Constant for reserved deleted User
@@ -31,50 +31,6 @@ func createDeletedUser(ctx context.Context, db *sql.DB) error {
 	return nil
 }
 
-func InitializeDB(ctx context.Context) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./uploads/DATABASE.db?_foreign_keys=on")
-	if err != nil {
-		return nil, err
-	}
-
-	//TODO: switch Time and Settings to a more efficient type
-	userCreateCommand := `CREATE TABLE IF NOT EXISTS USERS (
-		UID TEXT PRIMARY KEY, 
-		DISPLAY_NAME TEXT,
-		BIO TEXT,
-		PROFILE_PIC TEXT,
-		CREATION_DATE TEXT NOT NULL,
-		SETTINGS TEXT
-	);`
-
-	_, err = db.ExecContext(ctx, userCreateCommand)
-	if err != nil {
-		return nil, err
-	}
-
-	//TODO: switch UID to a more efficient type
-	dataCreateCommand := `CREATE TABLE IF NOT EXISTS DATA (
-	UUID TEXT PRIMARY KEY, 
-	NAME TEXT NOT NULL,
-	DESCRIPTION TEXT,
-	FILEPATH TEXT NOT NULL,
-	CREATOR_ID TEXT NOT NULL,
-	PREVIEW_IMG_PATH TEXT,
-	FOREIGN KEY (CREATOR_ID) REFERENCES USERS(UID)
-	);`
-	_, err = db.ExecContext(ctx, dataCreateCommand)
-	if err != nil {
-		return nil, err
-	}
-
-	err = createDeletedUser(ctx, db)
-	if err != nil {
-		return nil, err
-	}
-
-	return db, nil
-}
-
 func CreateUser(ctx context.Context, user *USER, db *sql.DB) error {
 	userInsertCommand := `INSERT INTO USERS (UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS) VALUES (?, ?, ?, ?, ?, ?);`
 
@@ -86,7 +42,7 @@ func CreateUser(ctx context.Context, user *USER, db *sql.DB) error {
 	return nil
 }
 
-func GetUserAccount(ctx context.Context, UID string, db *sql.DB) (*USER, error) {
+func GetUserAccount(ctx context.Context, UID string, db DbTxCombiner) (*USER, error) {
 	user := &USER{}
 	getUserCommand := `SELECT UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE, SETTINGS FROM USERS WHERE UID = ?`
 	result := db.QueryRowContext(ctx, getUserCommand, UID)
@@ -117,7 +73,7 @@ func GetUserInfo(ctx context.Context, UID string, db *sql.DB) (*USER_PUBLIC, err
 }
 
 // To get the records created by a specific user
-func GetUserRecords(ctx context.Context, UID string, db *sql.DB) ([]*DATA, error) {
+func GetUserRecords(ctx context.Context, UID string, db DbTxCombiner) ([]*DATA, error) {
 	var records []*DATA
 
 	getUserRecordsCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE CREATOR_ID = ?`
@@ -201,6 +157,10 @@ func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER_PUBLIC
 }
 
 func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool) error {
+
+	var filesToDelete []string
+	var previewsToDelete []string
+
 	//Using Transaction to Avoid Inconsistency
 	if userID == "" {
 		return fmt.Errorf("No User ID Given")
@@ -219,139 +179,68 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 			return err
 		}
 	} else {
-		deleteRecordsCommand := `DELETE FROM DATA WHERE CREATOR_ID = ?`
-
-		_, err = transaction.ExecContext(ctx, deleteRecordsCommand, userID)
+		var records []*DATA
+		records, err = GetUserRecords(ctx, userID, transaction)
 		if err != nil {
 			return err
 		}
+		for _, value := range records {
+			filesToDelete = append(filesToDelete, value.FILEPATH)
+			previewsToDelete = append(previewsToDelete, value.PREVIEW_IMG_PATH)
+		}
+
+		deleteCommand := `DELETE FROM DATA WHERE CREATOR_ID = ?`
+		_, err = transaction.ExecContext(ctx, deleteCommand, userID)
+		if err != nil {
+			return err
+		}
+
 	}
 
-	deleteUserCommand := `DELETE FROM USERS WHERE UID = ?`
+	//Get preview Image Path
+	profilePicturePath := ""
+	result, err := GetUserAccount(ctx, userID, transaction)
+	if err != nil {
+		return err
+	}
+	profilePicturePath = result.PROFILE_PIC
 
+	deleteUserCommand := `DELETE FROM USERS WHERE UID = ?`
 	results, err := transaction.ExecContext(ctx, deleteUserCommand, userID)
 	if err != nil {
 		return err
 	}
-
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("No User found with UID %s", userID)
 	}
+
 	err = transaction.Commit()
 	if err != nil {
 		return fmt.Errorf("Failed to Commit Transaction %w", err)
 	}
 
-	return nil
-}
-
-// .
-// .
-// .
-// .
-// .
-// .
-func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
-	dataInsertCommand := `INSERT INTO DATA (UUID, NAME, DESCRIPTION ,FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH) VALUES (?, ?, ?, ?, ?, ?);`
-
-	_, err := db.ExecContext(ctx, dataInsertCommand, data.UUID, data.NAME, data.DESCRIPTION, data.FILEPATH, data.CREATOR_ID, data.PREVIEW_IMG_PATH)
-
-	return err
-}
-func DeleteRecord(ctx context.Context, UID string, creatorID string, db *sql.DB) error {
-	dataDeleteCommand := `DELETE FROM DATA WHERE UUID = ? AND CREATOR_ID = ?`
-	results, err := db.ExecContext(ctx, dataDeleteCommand, UID, creatorID)
-	if err != nil {
+	//Remove profile picture image
+	err = os.Remove(profilePicturePath)
+	if err != nil && !os.IsNotExist(err) {
 		return err
 	}
 
-	rowsAffected, _ := results.RowsAffected()
-	if rowsAffected == 0 {
-		return fmt.Errorf("No Record found with UUID %s", UID)
+	//Remove files
+	for _, val := range filesToDelete {
+		err = os.Remove(val)
+		if err != nil && !os.IsNotExist(err) {
+			log.Println("Error deleting File:", val)
+		}
+	}
+
+	//Remove Previews
+	for _, val := range previewsToDelete {
+		err = os.Remove(val)
+		if err != nil && !os.IsNotExist(err) {
+			log.Println("Error deleting Preview:", val)
+		}
 	}
 
 	return nil
-}
-func GetRecord(ctx context.Context, UUID string, db *sql.DB) (*DATA, error) {
-	data := &DATA{}
-	getRecordQuery := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE UUID = ?`
-
-	result := db.QueryRowContext(ctx, getRecordQuery, UUID)
-	err := result.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("No Rows Found")
-		}
-		return nil, err
-	}
-
-	return data, nil
-}
-func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creatorID string, db *sql.DB) error {
-	updateQuery := `UPDATE DATA SET NAME = ?,DESCRIPTION = ?,PREVIEW_IMG_PATH = ? WHERE UUID = ? AND CREATOR_ID = ?`
-
-	if creatorID == "" {
-		return fmt.Errorf("No Creator UID provided")
-	}
-
-	if data.NAME == "" {
-		return fmt.Errorf("Name Not provided for Updating")
-	}
-
-	results, err := db.ExecContext(ctx, updateQuery, data.NAME, data.DESCRIPTION, data.PREVIEW_IMG_PATH, UID, creatorID)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, _ := results.RowsAffected()
-	if rowsAffected == 0 {
-		return fmt.Errorf("No Record found with UUID %s", UID)
-	}
-
-	return nil
-}
-
-func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescription bool) ([]*DATA, error) {
-	var data []*DATA
-
-	searchCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE `
-
-	if len(query) == 0 {
-		return nil, fmt.Errorf("No Queries Provided")
-	}
-
-	var keyWords []string
-	var args []any
-	if useDescription {
-		for i := range query {
-			keyWords = append(keyWords, "(NAME LIKE ? OR DESCRIPTION LIKE ?)")
-			args = append(args, "%"+query[i]+"%", "%"+query[i]+"%")
-		}
-	} else {
-		for i := range query {
-			keyWords = append(keyWords, "NAME LIKE ?")
-			args = append(args, "%"+query[i]+"%")
-		}
-	}
-
-	results, err := db.QueryContext(ctx, searchCommand+strings.Join(keyWords, " OR "), args...)
-	if err != nil {
-		return nil, err
-	}
-	defer results.Close()
-
-	for results.Next() {
-		row := &DATA{}
-		err := results.Scan(&row.UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH)
-		if err != nil {
-			return nil, err
-		}
-		data = append(data, row)
-	}
-	if results.Err() != nil {
-		return nil, results.Err()
-	}
-
-	return data, nil
 }
