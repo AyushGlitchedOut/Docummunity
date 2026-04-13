@@ -41,39 +41,75 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *gin.Engine {
 			"Authorization"},
 	}))
 
-	//FREE Routes
-	freeRoutes := router.Group("/api")
+	//Routing system
+	serverRoutes := router.Group("/api")
 	{
-		freeRoutes.GET("/", HandlePING)
-		freeRoutes.GET("/user/SEARCH/:query", HandleUserSEARCH(db))
-		freeRoutes.GET("/user/GET/:uid", HandleUserGET(db))
-		freeRoutes.GET("/data/SEARCH/:query", HandleDataSEARCH(db))
-		freeRoutes.GET("/data/GET/:uuid", HandleDataGET(db))
-		freeRoutes.GET("/user/RECORDS/:uid", HandleUserRecordsGET(db))
-	}
+		//USER ROUTES
+		userRoutes := serverRoutes.Group("/user")
+		{
+			//Auth Required
+			protectedUserRoutes := userRoutes.Group("/")
+			protectedUserRoutes.Use(auth.AuthMiddleware(firebaseAuth))
+			{
+				protectedUserRoutes.GET("/ACCOUNT", HandleUserACCOUNT(db))
+				protectedUserRoutes.POST("/CREATE", HandleUserCREATE(db))
+				protectedUserRoutes.PATCH("/UPDATE", HandleUserUPDATE(db))
+				protectedUserRoutes.DELETE("/DELETE", HandleUserDELETE(db))
+				protectedUserRoutes.DELETE("/DELETE/FULL", HandleUserDELETEWithRecords(db))
+			}
 
-	//User Routes
-	userRoutes := router.Group("/api/user")
-	userRoutes.Use(auth.AuthMiddleware(firebaseAuth))
-	{
-		userRoutes.GET("/ACCOUNT", HandleUserACCOUNT(db))
-		userRoutes.POST("/CREATE", HandleUserCREATE(db))
-		userRoutes.PATCH("/UPDATE", HandleUserUPDATE(db))
-		userRoutes.DELETE("/DELETE", HandleUserDELETE(db))
-		userRoutes.DELETE("/DELETE/FULL", HandleUserDELETEWithRecords(db))
-	}
+			//Free Routes
+			freeUserRoutes := userRoutes.Group("/")
+			{
+				freeUserRoutes.GET("/SEARCH/:query", HandleUserSEARCH(db))
+				freeUserRoutes.GET("/GET/:uid", HandleUserGET(db))
+				freeUserRoutes.GET("/RECORDS/:uid", HandleUserRecordsGET(db))
+				freeUserRoutes.GET("/PROFILE_PIC/:filename", HostUserPROFILE_PIC())
+			}
 
-	//Data Routes
-	dataRoutes := router.Group("/api/data")
-	dataRoutes.Use(auth.AuthMiddleware(firebaseAuth))
-	{
-		dataRoutes.POST("/CREATE", HandleDataCREATE(db))
-		dataRoutes.PATCH("/UPDATE", HandleDataUPDATE(db))
-		dataRoutes.DELETE("/DELETE", HandleDataDELETE(db))
-	}
+		}
 
-	//Test Routes
-	router.POST("/test", auth.AuthMiddleware(firebaseAuth), VerifyTest)
+		//DATA Routes
+		dataRoutes := serverRoutes.Group("/data")
+		{
+			//Auth reuired
+			protectedDataRoutes := dataRoutes.Group("/")
+			protectedDataRoutes.Use(auth.AuthMiddleware(firebaseAuth))
+			{
+				protectedDataRoutes.POST("/CREATE", HandleDataCREATE(db))
+				protectedDataRoutes.PATCH("/UPDATE", HandleDataUPDATE(db))
+				protectedDataRoutes.DELETE("/DELETE", HandleDataDELETE(db))
+			}
+
+			//Free routes
+			freeDataRoutes := dataRoutes.Group("/")
+			{
+				freeDataRoutes.GET("/SEARCH/:query", HandleDataSEARCH(db))
+				freeDataRoutes.GET("/GET/:uuid", HandleDataGET(db))
+				freeDataRoutes.GET("/PREVIEW/:filename", HostDataPreview())
+				freeDataRoutes.GET("/FILE/:filename", HostDataFiles())
+			}
+		}
+
+		//Other routes
+		otherRoutes := serverRoutes.Group("/")
+		{
+			//Auth Required
+			protectedOtherRoutes := otherRoutes.Group("/")
+			protectedOtherRoutes.Use(auth.AuthMiddleware(firebaseAuth))
+			{
+				protectedOtherRoutes.POST("/test", VerifyTest)
+			}
+
+			//Free Routes
+			freeOtherRoutes := otherRoutes.Group("/")
+			{
+				freeOtherRoutes.GET("/", HandlePING)
+			}
+
+		}
+
+	}
 
 	return router
 

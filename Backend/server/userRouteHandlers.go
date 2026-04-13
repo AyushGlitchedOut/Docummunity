@@ -16,6 +16,25 @@ import (
 
 // User Functions
 
+func HostUserPROFILE_PIC() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		fileName := ctx.Param("filename")
+		if fileName == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No Profile Picture Found for the User",
+			})
+			return
+		}
+
+		verifiedFileName := filepath.Base(fileName)
+
+		filePath := filepath.Join(utilities.ProfilePicDirectory, verifiedFileName)
+
+		//TODO: Build a caching system and put a cache-control header
+		ctx.File(filePath)
+	}
+}
+
 func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		publicUserInfo := &dbUtils.USER_PUBLIC{}
@@ -26,6 +45,7 @@ func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No UID found for User",
 			})
+			return
 		}
 
 		result, err := dbUtils.GetUserInfo(ctx, uid, db)

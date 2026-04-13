@@ -27,6 +27,44 @@ func VerifyTest(ctx *gin.Context) {
 }
 
 // Data Functions
+
+func HostDataFiles() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		fileName := ctx.Param("filename")
+		if fileName == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No File Found for the Record",
+			})
+			return
+		}
+
+		verifiedFileName := filepath.Base(fileName)
+
+		filePath := filepath.Join(utilities.FileDirectory, verifiedFileName)
+
+		ctx.File(filePath)
+	}
+}
+
+func HostDataPreview() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		fileName := ctx.Param("filename")
+		if fileName == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No Preview Found for the Record",
+			})
+			return
+		}
+
+		verifiedFileName := filepath.Base(fileName)
+
+		filePath := filepath.Join(utilities.PreviewImgDirectory, verifiedFileName)
+
+		ctx.File(filePath)
+
+	}
+}
+
 func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		data := &dbUtils.DATA{}
