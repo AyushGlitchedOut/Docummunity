@@ -5,19 +5,21 @@ import (
 	"database/sql"
 	"log"
 	"net/http"
+	"time"
 
 	firebase "firebase.google.com/go"
 	"github.com/AyushGlitchedOut/Docummunity/server/consts"
+	"github.com/AyushGlitchedOut/Docummunity/server/handlers"
 	"github.com/AyushGlitchedOut/Docummunity/server/routes"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
-const ()
-
-// TODO: Handle Timeouts by using a http.Server and attaching gin's Eouter to it, with configuration for large upload and all.
 func InitServer(port string, db *sql.DB, firebase *firebase.App) *http.Server {
 	router := gin.New()
+	//MaxSize
+	router.Use(handlers.MaxSizeMiddleware(consts.MaxDocumentSize + 2<<20)) //Max document size since its the biggest you can upload, and 2mb more for other details in the body
+	router.MaxMultipartMemory = consts.MaxPerRequestServerMemorySize
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
 	//TEMPORARY CORS POLICY! REMOVE IN PRODUCTION
@@ -29,11 +31,15 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *http.Server {
 			"Content-Type",
 			"Authorization"},
 	}))
-	router.MaxMultipartMemory = consts.MaxPerRequestServerMemorySize
 
 	httpServer := &http.Server{
-		Addr:    port,
-		Handler: router,
+		Addr:              port,
+		Handler:           router,
+		MaxHeaderBytes:    256 << 10,
+		ReadHeaderTimeout: 5 * time.Second,
+		ReadTimeout:       2 * time.Minute,
+		WriteTimeout:      0,
+		IdleTimeout:       1 * time.Minute,
 	}
 
 	//Get Auth Function from Firebase App
@@ -42,6 +48,7 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *http.Server {
 		log.Fatal("Error Configuring Firebase Admin SDK")
 	}
 
+	//TODO: Add rate-limiting to routes
 	//Routing system
 	serverRoutes := router.Group("/api")
 	{

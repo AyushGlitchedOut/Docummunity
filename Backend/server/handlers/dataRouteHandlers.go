@@ -105,6 +105,21 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		dataRecord := &dbUtils.DATA{}
 
+		//See if file is there or not
+		document, err := ctx.FormFile("FILE")
+		if err != nil {
+			if strings.Contains(err.Error(), "request body too large") {
+				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+					"error": "File too Large",
+				})
+				return
+			}
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "File Not Found!",
+			})
+			return
+		}
+
 		//Time-UUID
 		uuid := utilities.GenerateUUID()
 		dataRecord.UUID = uuid
@@ -147,13 +162,6 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//Save File
-		document, err := ctx.FormFile("FILE")
-		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "File Not Found!",
-			})
-			return
-		}
 		documentPath := utilities.FileDirectory + uuid + filepath.Ext(document.Filename)
 		if document.Size > consts.MaxDocumentSize {
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{

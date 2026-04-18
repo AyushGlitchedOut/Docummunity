@@ -164,6 +164,17 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		user := &dbUtils.USER{}
 
+		//Check if profile picture exists or not
+		pictureFile, profilePicErr := ctx.FormFile("PROFILE_PIC")
+		if profilePicErr != nil {
+			if strings.Contains(profilePicErr.Error(), "request body too large") {
+				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+					"error": "File too Large",
+				})
+				return
+			}
+		}
+
 		//Obtain UID From JWT
 		UID, err := utilities.ParseToken(ctx)
 		if err != nil {
@@ -175,8 +186,7 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		user.UID = UID
 
 		//Profile Pic Saving logic
-		pictureFile, err := ctx.FormFile("PROFILE_PIC")
-		if err == nil && pictureFile != nil {
+		if profilePicErr == nil && pictureFile != nil {
 			if pictureFile.Size > consts.MaxPictureSize {
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 					"error": "Profile Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
