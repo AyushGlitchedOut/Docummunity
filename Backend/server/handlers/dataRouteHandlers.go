@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"database/sql"
@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
+	"github.com/AyushGlitchedOut/Docummunity/server/consts"
 	"github.com/AyushGlitchedOut/Docummunity/utilities"
 	"github.com/gin-gonic/gin"
 )
@@ -132,9 +133,9 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		previewIMGPath := ""
 		previewIMG, err := ctx.FormFile("PREVIEW")
 		if err == nil {
-			if previewIMG.Size > maxPictureSize {
+			if previewIMG.Size > consts.MaxPictureSize {
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
-					"error": "Preview Picture should be less than " + strconv.Itoa(maxPictureSize>>20) + "mb!",
+					"error": "Preview Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
 				})
 				return
 			}
@@ -154,9 +155,9 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 		documentPath := utilities.FileDirectory + uuid + filepath.Ext(document.Filename)
-		if document.Size > maxDocumentSize {
+		if document.Size > consts.MaxDocumentSize {
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
-				"error": "File must be lesser than " + strconv.Itoa(maxDocumentSize>>20) + "mb!",
+				"error": "File must be lesser than " + strconv.Itoa(consts.MaxDocumentSize>>20) + "mb!",
 			})
 			return
 		}

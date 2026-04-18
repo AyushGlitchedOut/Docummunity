@@ -1,4 +1,4 @@
-package server
+package handlers
 
 import (
 	"database/sql"
@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
+	"github.com/AyushGlitchedOut/Docummunity/server/consts"
 	"github.com/AyushGlitchedOut/Docummunity/utilities"
 	"github.com/gin-gonic/gin"
 )
@@ -176,9 +177,9 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		//Profile Pic Saving logic
 		pictureFile, err := ctx.FormFile("PROFILE_PIC")
 		if err == nil && pictureFile != nil {
-			if pictureFile.Size > maxPictureSize {
+			if pictureFile.Size > consts.MaxPictureSize {
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
-					"error": "Profile Picture should be less than " + strconv.Itoa(maxPictureSize>>20) + "mb!",
+					"error": "Profile Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
 				})
 				return
 			}
