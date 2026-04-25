@@ -9,8 +9,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/AyushGlitchedOut/Docummunity/authUtils"
+	"github.com/AyushGlitchedOut/Docummunity/consts"
 	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
-	"github.com/AyushGlitchedOut/Docummunity/server/consts"
 	"github.com/AyushGlitchedOut/Docummunity/utilities"
 	"github.com/gin-gonic/gin"
 )
@@ -41,7 +42,7 @@ func HostDataFiles() gin.HandlerFunc {
 
 		verifiedFileName := filepath.Base(fileName)
 
-		filePath := filepath.Join(utilities.FileDirectory, verifiedFileName)
+		filePath := filepath.Join(consts.FileDirectory, verifiedFileName)
 
 		ctx.File(filePath)
 	}
@@ -59,7 +60,7 @@ func HostDataPreview() gin.HandlerFunc {
 
 		verifiedFileName := filepath.Base(fileName)
 
-		filePath := filepath.Join(utilities.PreviewImgDirectory, verifiedFileName)
+		filePath := filepath.Join(consts.PreviewImgDirectory, verifiedFileName)
 
 		ctx.File(filePath)
 
@@ -70,8 +71,8 @@ func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		data := &dbUtils.DATA{}
 
+		//Get Data UUID
 		uuid := ctx.Param("uuid")
-
 		if uuid == "" {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No uuid found for the record",
@@ -124,15 +125,15 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		uuid := utilities.GenerateUUID()
 		dataRecord.UUID = uuid
 
-		//CreatorID
-		creatorID, err := utilities.ParseToken(ctx)
+		//Obtain Creator UID From JWT
+		CreatorUID, err := authUtils.ParseToken(ctx)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
-		dataRecord.CREATOR_ID = creatorID
+		dataRecord.CREATOR_ID = CreatorUID
 
 		//Name and Description
 		dataRecord.NAME = ctx.PostForm("NAME")
@@ -154,7 +155,7 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 				})
 				return
 			}
-			previewIMGPath = utilities.PreviewImgDirectory + uuid + filepath.Ext(previewIMG.Filename)
+			previewIMGPath = consts.PreviewImgDirectory + uuid + filepath.Ext(previewIMG.Filename)
 			err = ctx.SaveUploadedFile(previewIMG, previewIMGPath)
 			if err == nil {
 				dataRecord.PREVIEW_IMG_PATH = previewIMGPath
@@ -162,7 +163,7 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//Save File
-		documentPath := utilities.FileDirectory + uuid + filepath.Ext(document.Filename)
+		documentPath := consts.FileDirectory + uuid + filepath.Ext(document.Filename)
 		if document.Size > consts.MaxDocumentSize {
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 				"error": "File must be lesser than " + strconv.Itoa(consts.MaxDocumentSize>>20) + "mb!",
@@ -214,7 +215,45 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 }
 
 func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {}
+	return func(ctx *gin.Context) {
+
+		//Get Data UUID
+		uuid := ctx.Param("uuid")
+		if uuid == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No uuid found for the record",
+			})
+			return
+		}
+
+		//Obtain Creator UID From JWT
+		CreatorUID, err := authUtils.ParseToken(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		err = dbUtils.DeleteRecord(ctx, uuid, CreatorUID, db)
+
+		if err != nil {
+			if strings.Contains(err.Error(), "No Rows Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No Record Found to delete!",
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "Record Successfully Deleted",
+		})
+	}
 }
 
 func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {

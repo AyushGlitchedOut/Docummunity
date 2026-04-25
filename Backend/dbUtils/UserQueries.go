@@ -208,11 +208,12 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 	deleteUserCommand := `DELETE FROM USERS WHERE UID = ?`
 	results, err := transaction.ExecContext(ctx, deleteUserCommand, userID)
 	if err != nil {
+		log.Println("2")
 		return err
 	}
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No User found with UID %s", userID)
+		return fmt.Errorf("No User found with UID: %s", userID)
 	}
 
 	err = transaction.Commit()
@@ -221,21 +222,31 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 	}
 
 	//Remove profile picture image
-	err = os.Remove(profilePicturePath)
-	if err != nil && !os.IsNotExist(err) {
-		return err
+	if profilePicturePath != "" {
+		err = os.Remove(profilePicturePath)
+		if err != nil && !os.IsNotExist(err) {
+			log.Println("Error Deleting Preview Image")
+			return err
+		}
 	}
 
 	//Remove files
 	for _, val := range filesToDelete {
+		if val == "" {
+			continue
+		}
 		err = os.Remove(val)
 		if err != nil && !os.IsNotExist(err) {
 			log.Println("Error deleting File:", val)
 		}
+
 	}
 
 	//Remove Previews
 	for _, val := range previewsToDelete {
+		if val == "" {
+			continue
+		}
 		err = os.Remove(val)
 		if err != nil && !os.IsNotExist(err) {
 			log.Println("Error deleting Preview:", val)

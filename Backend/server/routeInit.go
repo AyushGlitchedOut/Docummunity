@@ -8,7 +8,7 @@ import (
 	"time"
 
 	firebase "firebase.google.com/go"
-	"github.com/AyushGlitchedOut/Docummunity/server/consts"
+	"github.com/AyushGlitchedOut/Docummunity/consts"
 	"github.com/AyushGlitchedOut/Docummunity/server/handlers"
 	"github.com/AyushGlitchedOut/Docummunity/server/routes"
 	"github.com/gin-contrib/cors"

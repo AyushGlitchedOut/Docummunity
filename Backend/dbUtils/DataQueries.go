@@ -74,7 +74,13 @@ func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
 }
 func DeleteRecord(ctx context.Context, UUID string, creatorID string, db *sql.DB) error {
 
-	record, err := GetRecord(ctx, UUID, db)
+	transaction, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("Error Starting Transaction: %w", err)
+	}
+	defer transaction.Rollback()
+
+	record, err := GetRecord(ctx, UUID, transaction)
 	if err != nil {
 		return err
 	}
@@ -82,7 +88,7 @@ func DeleteRecord(ctx context.Context, UUID string, creatorID string, db *sql.DB
 	previewPath := record.PREVIEW_IMG_PATH
 
 	dataDeleteCommand := `DELETE FROM DATA WHERE UUID = ? AND CREATOR_ID = ?`
-	results, err := db.ExecContext(ctx, dataDeleteCommand, UUID, creatorID)
+	results, err := transaction.ExecContext(ctx, dataDeleteCommand, UUID, creatorID)
 	if err != nil {
 		return err
 	}
@@ -90,6 +96,11 @@ func DeleteRecord(ctx context.Context, UUID string, creatorID string, db *sql.DB
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("No Rows Found")
+	}
+
+	err = transaction.Commit()
+	if err != nil {
+		return fmt.Errorf("Failed to Commit Transaction %w", err)
 	}
 
 	//delete preview
@@ -110,7 +121,7 @@ func DeleteRecord(ctx context.Context, UUID string, creatorID string, db *sql.DB
 
 	return nil
 }
-func GetRecord(ctx context.Context, UUID string, db *sql.DB) (*DATA, error) {
+func GetRecord(ctx context.Context, UUID string, db DbTxCombiner) (*DATA, error) {
 	data := &DATA{}
 	getRecordQuery := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE UUID = ?`
 

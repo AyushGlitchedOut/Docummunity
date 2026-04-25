@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/AyushGlitchedOut/Docummunity/authUtils"
+	"github.com/AyushGlitchedOut/Docummunity/consts"
 	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
-	"github.com/AyushGlitchedOut/Docummunity/server/consts"
-	"github.com/AyushGlitchedOut/Docummunity/utilities"
 	"github.com/gin-gonic/gin"
 )
 
@@ -29,7 +29,7 @@ func HostUserPROFILE_PIC() gin.HandlerFunc {
 
 		verifiedFileName := filepath.Base(fileName)
 
-		filePath := filepath.Join(utilities.ProfilePicDirectory, verifiedFileName)
+		filePath := filepath.Join(consts.ProfilePicDirectory, verifiedFileName)
 
 		//TODO: Build a caching system and put a cache-control header
 		ctx.File(filePath)
@@ -76,7 +76,8 @@ func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 
 		userAccountInfo := &dbUtils.USER{}
 
-		token, err := utilities.ParseToken(ctx)
+		//Obtain UID From JWT
+		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
@@ -84,7 +85,7 @@ func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		result, err := dbUtils.GetUserAccount(ctx, token, db)
+		result, err := dbUtils.GetUserAccount(ctx, UID, db)
 		if err != nil {
 			if strings.Contains(err.Error(), "No Rows Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
@@ -176,7 +177,7 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//Obtain UID From JWT
-		UID, err := utilities.ParseToken(ctx)
+		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
@@ -194,7 +195,7 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 				return
 			}
 
-			path := utilities.ProfilePicDirectory + user.UID + filepath.Ext(pictureFile.Filename)
+			path := consts.ProfilePicDirectory + user.UID + filepath.Ext(pictureFile.Filename)
 			err = ctx.SaveUploadedFile(pictureFile, path)
 			if err == nil {
 				user.PROFILE_PIC = path
@@ -241,15 +242,42 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-func HandleUserDELETE(db *sql.DB) gin.HandlerFunc {
+func HandleUserDELETE(db *sql.DB, keeprecords bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
-	}
-}
+		//Obtain UID From JWT
+		UID, err := authUtils.ParseToken(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 
-func HandleUserDELETEWithRecords(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {
+		err = dbUtils.DeleteUser(ctx, UID, db, keeprecords)
+		if err != nil {
+			if strings.Contains(err.Error(), "No User found with UID:") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
+			if strings.Contains(err.Error(), "No Rows Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": err.Error(),
+				})
+				return
+			}
 
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "User Successfully Deleted, Records Preserved: " + strconv.FormatBool(keeprecords),
+		})
 	}
 }
 

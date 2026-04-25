@@ -18,7 +18,7 @@ func CreateDataRoutes(group *gin.RouterGroup, firebaseAuth *auth.Client, db *sql
 		{
 			protectedDataRoutes.POST("/CREATE", handlers.HandleDataCREATE(db))
 			protectedDataRoutes.PATCH("/UPDATE", handlers.HandleDataUPDATE(db))
-			protectedDataRoutes.DELETE("/DELETE", handlers.HandleDataDELETE(db))
+			protectedDataRoutes.DELETE("/DELETE/:uuid", handlers.HandleDataDELETE(db))
 		}
 
 		//Free routes

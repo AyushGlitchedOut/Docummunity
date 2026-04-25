@@ -1,4 +1,4 @@
-package utilities
+package authUtils
 
 import (
 	"fmt"
