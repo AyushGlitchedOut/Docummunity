@@ -48,7 +48,6 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *http.Server {
 		log.Fatal("Error Configuring Firebase Admin SDK")
 	}
 
-	//TODO: Add rate-limiting to routes
 	//Routing system
 	serverRoutes := router.Group("/api")
 	{

@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -211,7 +212,19 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 }
 
 func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {}
+	return func(ctx *gin.Context) {
+		//Get Data UUID
+		uuid := ctx.Param("uuid")
+		if uuid == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No uuid found for the record",
+			})
+			return
+		}
+
+		log.Println(uuid)
+
+	}
 }
 
 func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {

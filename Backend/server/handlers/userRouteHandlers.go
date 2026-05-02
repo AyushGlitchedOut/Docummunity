@@ -48,6 +48,12 @@ func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 			})
 			return
 		}
+		if uid == "000" {
+			ctx.JSON(http.StatusForbidden, gin.H{
+				"error": "Invalid UID found",
+			})
+			return
+		}
 
 		result, err := dbUtils.GetUserInfo(ctx, uid, db)
 		if err != nil {
@@ -134,6 +140,12 @@ func HandleUserRecordsGET(db *sql.DB) gin.HandlerFunc {
 		if uid == "" {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No UID found for User",
+			})
+			return
+		}
+		if uid == "000" {
+			ctx.JSON(http.StatusForbidden, gin.H{
+				"error": "Invalid UID found",
 			})
 			return
 		}
