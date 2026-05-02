@@ -3,7 +3,6 @@ package handlers
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -213,6 +212,10 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 
 func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+
+		//Update Info store
+		updateRecordInfo := &dbUtils.DataInfoUpdate{}
+
 		//Get Data UUID
 		uuid := ctx.Param("uuid")
 		if uuid == "" {
@@ -222,7 +225,60 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		log.Println(uuid)
+		//Get User's UID
+		CreatorUID, err := authUtils.ParseToken(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		//Get Details
+		updateRecordInfo.NAME = ctx.PostForm("NAME")
+		updateRecordInfo.DESCRIPTION = ctx.PostForm("DESCRIPTION")
+
+		if updateRecordInfo.NAME == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No Name Provided",
+			})
+			return
+		}
+
+		//Get Preview-Image
+		previewIMGPath := ""
+		previewIMG, err := ctx.FormFile("PREVIEW")
+		if err == nil {
+			if previewIMG.Size > consts.MaxPictureSize {
+				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+					"error": "Preview Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
+				})
+				return
+			}
+			previewIMGPath = consts.PreviewImgDirectory + uuid + filepath.Ext(previewIMG.Filename)
+			err = ctx.SaveUploadedFile(previewIMG, previewIMGPath)
+			if err == nil {
+				updateRecordInfo.PREVIEW_IMG_PATH = previewIMGPath
+			}
+		}
+
+		err = dbUtils.UpdateRecord(ctx, uuid, updateRecordInfo, CreatorUID, db)
+		if err != nil {
+			if strings.Contains(err.Error(), "No Record found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No Record Found for the UUID",
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "Updated Record Successfully",
+		})
 
 	}
 }

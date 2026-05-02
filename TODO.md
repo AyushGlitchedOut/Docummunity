@@ -6,3 +6,7 @@
 4. FullText Search rather than simple SQL comparison upon switching for search Functions
 5. Prevent users from accessing '000' deleted User
 6. Add Rate-limiting to Routes
+7. Check all routes to make sure formats and messages for erros/succession are consistent
+8. Handle error from preview and profile Picture saving everywhere
+9. Make all DB functions return cosistent errors
+

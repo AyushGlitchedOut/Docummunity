@@ -137,17 +137,13 @@ func GetRecord(ctx context.Context, UUID string, db DbTxCombiner) (*DATA, error)
 	return data, nil
 }
 func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creatorID string, db *sql.DB) error {
-	updateQuery := `UPDATE DATA SET NAME = ?,DESCRIPTION = ?,PREVIEW_IMG_PATH = ? WHERE UUID = ? AND CREATOR_ID = ?`
 
-	if creatorID == "" {
-		return fmt.Errorf("No Creator UID provided")
-	}
+	var updateQuery string
+	var results sql.Result
+	var err error
 
-	if data.NAME == "" {
-		return fmt.Errorf("Name Not provided for Updating")
-	}
-
-	results, err := db.ExecContext(ctx, updateQuery, data.NAME, data.DESCRIPTION, data.PREVIEW_IMG_PATH, UID, creatorID)
+	updateQuery = `UPDATE DATA SET NAME = ?,DESCRIPTION = ?,PREVIEW_IMG_PATH = ? WHERE UUID = ? AND CREATOR_ID = ?`
+	results, err = db.ExecContext(ctx, updateQuery, data.NAME, data.DESCRIPTION, data.PREVIEW_IMG_PATH, UID, creatorID)
 	if err != nil {
 		return err
 	}
