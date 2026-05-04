@@ -9,4 +9,5 @@
 7. Check all routes to make sure formats and messages for erros/succession are consistent
 8. Handle error from preview and profile Picture saving everywhere
 9. Make all DB functions return cosistent errors
-
+10. After the backend is properly complete, make it so the delete function delets the user from firebase too
+11. Make it so old profile Pictures and Previews are deleted upon updating the record/user

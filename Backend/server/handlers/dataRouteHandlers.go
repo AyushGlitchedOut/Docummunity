@@ -248,6 +248,14 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Get Preview-Image
 		previewIMGPath := ""
 		previewIMG, err := ctx.FormFile("PREVIEW")
+		if err != nil {
+			if strings.Contains(err.Error(), "request body too large") {
+				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+					"error": "File too Large",
+				})
+				return
+			}
+		}
 		if err == nil {
 			if previewIMG.Size > consts.MaxPictureSize {
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{

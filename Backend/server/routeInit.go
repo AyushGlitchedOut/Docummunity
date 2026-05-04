@@ -15,7 +15,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func InitServer(port string, db *sql.DB, firebase *firebase.App) *http.Server {
+func InitServer(port string, db *sql.DB, firebaseApp *firebase.App) *http.Server {
 	router := gin.New()
 	//MaxSize
 	router.Use(handlers.MaxSizeMiddleware(consts.MaxDocumentSize + 2<<20)) //Max document size since its the biggest you can upload, and 2mb more for other details in the body
@@ -43,7 +43,7 @@ func InitServer(port string, db *sql.DB, firebase *firebase.App) *http.Server {
 	}
 
 	//Get Auth Function from Firebase App
-	firebaseAuth, err := firebase.Auth(context.Background())
+	firebaseAuth, err := firebaseApp.Auth(context.Background())
 	if err != nil {
 		log.Fatal("Error Configuring Firebase Admin SDK")
 	}

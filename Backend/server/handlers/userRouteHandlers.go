@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strconv"
@@ -251,6 +252,74 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
+		updatedData := &dbUtils.UserInfoUpdate{}
+
+		//Obtain UID From JWT
+		UID, err := authUtils.ParseToken(ctx)
+		if err != nil {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+
+		//Obtain Details
+		updatedData.DISPLAY_NAME = ctx.PostForm("NAME")
+		updatedData.BIO = ctx.PostForm("BIO")
+		updatedData.SETTINGS = ctx.PostForm("SETTINGS")
+
+		//Save Profile Picture
+		profilePicture, err := ctx.FormFile("PROFILE_PIC")
+		if err != nil {
+			if strings.Contains(err.Error(), "request body too large") {
+				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+					"error": "File Too Large",
+				})
+				return
+			}
+		}
+		if err == nil && profilePicture != nil {
+			if profilePicture.Size > consts.MaxPictureSize {
+				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+					"error": "Profile Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
+				})
+				return
+			}
+
+			path := consts.ProfilePicDirectory + UID + filepath.Ext(profilePicture.Filename)
+			err = ctx.SaveUploadedFile(profilePicture, path)
+			if err == nil {
+				updatedData.PROFILE_PIC = path
+			}
+		}
+
+		//verify display name
+		if updatedData.DISPLAY_NAME == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Display Name Not Provided",
+			})
+			return
+		}
+
+		err = dbUtils.UpdateUserInfo(ctx, UID, updatedData, db)
+		if err != nil {
+			if strings.Contains(err.Error(), "No User found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No User Found",
+				})
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Something Went Wrong!",
+			})
+			return
+		}
+
+		log.Println(UID)
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": "User Updated",
+		})
+
 	}
 }
 
@@ -270,13 +339,13 @@ func HandleUserDELETE(db *sql.DB, keeprecords bool) gin.HandlerFunc {
 		if err != nil {
 			if strings.Contains(err.Error(), "No User found with UID:") {
 				ctx.JSON(http.StatusNotFound, gin.H{
-					"error": err.Error(),
+					"error": "No User Found to Delete",
 				})
 				return
 			}
 			if strings.Contains(err.Error(), "No Rows Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
-					"error": err.Error(),
+					"error": "No User Found to Delete",
 				})
 				return
 			}

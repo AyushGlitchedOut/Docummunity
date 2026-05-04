@@ -102,9 +102,6 @@ func GetUserRecords(ctx context.Context, UID string, db DbTxCombiner) ([]*DATA, 
 }
 
 func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *sql.DB) error {
-	if data.DISPLAY_NAME == "" {
-		return fmt.Errorf("No Name Provided")
-	}
 	updateUserInfoCommand := `UPDATE USERS SET DISPLAY_NAME = ?, BIO = ?,PROFILE_PIC = ?, SETTINGS = ? WHERE UID = ?`
 	results, err := db.ExecContext(ctx, updateUserInfoCommand, data.DISPLAY_NAME, data.BIO, data.PROFILE_PIC, data.SETTINGS, UID)
 	if err != nil {
@@ -113,7 +110,7 @@ func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *s
 
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No Record found with UUID %s", UID)
+		return fmt.Errorf("No User Found with UID %s", UID)
 	}
 
 	return nil
