@@ -210,6 +210,7 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
+// DEV NOTE: I wrote this function initially without the deletion of the old file. I wrote the old-file deletion code in the commit after 4 May, and wrote the whole thing myself (see the changes between commits of 4 May and after that.). This is one of the more complex logics I have designed myself, and am proud that I wrote the entire thing without using any AI.
 func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
@@ -237,6 +238,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Get Details
 		updateRecordInfo.NAME = ctx.PostForm("NAME")
 		updateRecordInfo.DESCRIPTION = ctx.PostForm("DESCRIPTION")
+		emptyPreview := ctx.PostForm("emptyPreview")
 
 		if updateRecordInfo.NAME == "" {
 			ctx.JSON(http.StatusBadRequest, gin.H{
@@ -244,34 +246,127 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 			})
 			return
 		}
+		if emptyPreview == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Please provide the emptyPreview argument",
+			})
+			return
+		}
+
+		//Get Old Record Info
+		oldRecordInfo, err := dbUtils.GetRecord(ctx, uuid, db)
+		if err != nil {
+			if strings.Contains(err.Error(), "No Rows Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "The record doesn't exist",
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
 
 		//Get Preview-Image
-		previewIMGPath := ""
-		previewIMG, err := ctx.FormFile("PREVIEW")
-		if err != nil {
-			if strings.Contains(err.Error(), "request body too large") {
-				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
-					"error": "File too Large",
-				})
-				return
+		deletedOldPreviewIMGPath := ""
+		oldPreviewIMGPath := ""
+		newPreviewIMGPath := ""
+		newPreviewIMG, err := ctx.FormFile("PREVIEW")
+		if emptyPreview == "true" {
+			updateRecordInfo.PREVIEW_IMG_PATH = ""
+			if oldRecordInfo.PREVIEW_IMG_PATH != "" {
+
+				deletedOldPreviewIMGPathFileName := filepath.Base(oldRecordInfo.PREVIEW_IMG_PATH)
+				deletedOldPreviewIMGPathLocation := filepath.Dir(oldRecordInfo.PREVIEW_IMG_PATH)
+				deletedOldPreviewIMGPath = filepath.Join(deletedOldPreviewIMGPathLocation, "__DELETED__"+deletedOldPreviewIMGPathFileName)
+				err = os.Rename(oldRecordInfo.PREVIEW_IMG_PATH, deletedOldPreviewIMGPath)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": err.Error(),
+					})
+					return
+				}
 			}
 		}
-		if err == nil {
-			if previewIMG.Size > consts.MaxPictureSize {
-				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
-					"error": "Preview Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
-				})
-				return
-			}
-			previewIMGPath = consts.PreviewImgDirectory + uuid + filepath.Ext(previewIMG.Filename)
-			err = ctx.SaveUploadedFile(previewIMG, previewIMGPath)
-			if err == nil {
-				updateRecordInfo.PREVIEW_IMG_PATH = previewIMGPath
+		if emptyPreview != "true" {
+			if err != nil {
+				updateRecordInfo.PREVIEW_IMG_PATH = oldRecordInfo.PREVIEW_IMG_PATH
+				if strings.Contains(err.Error(), "request body too large") {
+					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+						"error": "File too Large",
+					})
+					return
+				}
+			} else {
+				if newPreviewIMG.Size > consts.MaxPictureSize {
+					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+						"error": "Preview Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
+					})
+					return
+				}
+
+				//Mark the old image as deleted
+				oldPreviewIMGPath = oldRecordInfo.PREVIEW_IMG_PATH
+
+				if oldPreviewIMGPath != "" {
+
+					deletedOldPreviewIMGPathFileName := filepath.Base(oldPreviewIMGPath)
+					deletedOldPreviewIMGPathLocation := filepath.Dir(oldPreviewIMGPath)
+					deletedOldPreviewIMGPath = filepath.Join(deletedOldPreviewIMGPathLocation, "__DELETED__"+deletedOldPreviewIMGPathFileName)
+
+					err = os.Rename(oldPreviewIMGPath, deletedOldPreviewIMGPath)
+					if err != nil {
+						ctx.JSON(http.StatusInternalServerError, gin.H{
+							"error": err.Error(),
+						})
+						return
+					}
+				}
+
+				newPreviewIMGPath = consts.PreviewImgDirectory + uuid + filepath.Ext(newPreviewIMG.Filename)
+				err = ctx.SaveUploadedFile(newPreviewIMG, newPreviewIMGPath)
+				if err != nil {
+					if deletedOldPreviewIMGPath != "" {
+						FSerr := os.Rename(deletedOldPreviewIMGPath, oldPreviewIMGPath)
+						if FSerr != nil {
+							ctx.JSON(http.StatusInternalServerError, gin.H{
+								"error": FSerr.Error(),
+							})
+							return
+						}
+					}
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": err.Error(),
+					})
+					return
+				}
+				updateRecordInfo.PREVIEW_IMG_PATH = newPreviewIMGPath
 			}
 		}
 
+		//Update the actual record
 		err = dbUtils.UpdateRecord(ctx, uuid, updateRecordInfo, CreatorUID, db)
 		if err != nil {
+			var FSerr error
+			if newPreviewIMGPath != "" {
+				FSerr = os.Remove(newPreviewIMGPath)
+				if FSerr != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": FSerr.Error(),
+					})
+					return
+				}
+			}
+			if deletedOldPreviewIMGPath != "" {
+				FSerr = os.Rename(deletedOldPreviewIMGPath, oldPreviewIMGPath)
+				if FSerr != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": FSerr.Error(),
+					})
+					return
+				}
+			}
 			if strings.Contains(err.Error(), "No Record found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Record Found for the UUID",
@@ -281,6 +376,18 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
+			return
+		}
+
+		//delete the file finally
+		if deletedOldPreviewIMGPath != "" {
+			err = os.Remove(deletedOldPreviewIMGPath)
+			if err != nil {
+				ctx.JSON(http.StatusOK, gin.H{
+					"message": "Updated Record Successfully",
+					"warning": "Record Updated, but old file still exists. Request manual deletion",
+				})
+			}
 			return
 		}
 

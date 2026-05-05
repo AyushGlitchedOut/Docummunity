@@ -278,7 +278,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 				return
 			}
 		}
-		if err == nil && profilePicture != nil {
+		if err == nil {
 			if profilePicture.Size > consts.MaxPictureSize {
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 					"error": "Profile Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
