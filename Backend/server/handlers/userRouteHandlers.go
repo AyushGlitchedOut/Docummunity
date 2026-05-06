@@ -3,8 +3,8 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -252,7 +252,7 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
-		updatedData := &dbUtils.UserInfoUpdate{}
+		updatedUser := &dbUtils.UserInfoUpdate{}
 
 		//Obtain UID From JWT
 		UID, err := authUtils.ParseToken(ctx)
@@ -264,49 +264,35 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//Obtain Details
-		updatedData.DISPLAY_NAME = ctx.PostForm("NAME")
-		updatedData.BIO = ctx.PostForm("BIO")
-		updatedData.SETTINGS = ctx.PostForm("SETTINGS")
-
-		//Save Profile Picture
-		profilePicture, err := ctx.FormFile("PROFILE_PIC")
-		if err != nil {
-			if strings.Contains(err.Error(), "request body too large") {
-				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
-					"error": "File Too Large",
-				})
-				return
-			}
-		}
-		if err == nil {
-			if profilePicture.Size > consts.MaxPictureSize {
-				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
-					"error": "Profile Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
-				})
-				return
-			}
-
-			path := consts.ProfilePicDirectory + UID + filepath.Ext(profilePicture.Filename)
-			err = ctx.SaveUploadedFile(profilePicture, path)
-			if err == nil {
-				updatedData.PROFILE_PIC = path
-			}
-		}
+		updatedUser.DISPLAY_NAME = ctx.PostForm("NAME")
+		updatedUser.BIO = ctx.PostForm("BIO")
+		updatedUser.SETTINGS = ctx.PostForm("SETTINGS")
+		emptyProfilePicture := ctx.PostForm("emptyProfilePicture")
 
 		//verify display name
-		if updatedData.DISPLAY_NAME == "" {
+		if updatedUser.DISPLAY_NAME == "" {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "Display Name Not Provided",
 			})
 			return
 		}
 
-		err = dbUtils.UpdateUserInfo(ctx, UID, updatedData, db)
+		//verify emptyProfilePicture argument
+		if emptyProfilePicture == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "Please Provide the emptyProfilePicture argument",
+			})
+			return
+		}
+
+		//Get User's Old Info
+		oldUserInfo, err := dbUtils.GetUserInfo(ctx, UID, db)
 		if err != nil {
-			if strings.Contains(err.Error(), "No User found") {
+			if strings.Contains(err.Error(), "No Rows Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})
+				return
 			}
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Something Went Wrong!",
@@ -314,7 +300,132 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		log.Println(UID)
+		//Save Profile Picture
+
+		deletedOldUserProfilePicturePath := ""
+		updatedUserProfilePicture := ""
+		profilePicture, err := ctx.FormFile("PROFILE_PIC")
+		if emptyProfilePicture == "true" {
+			updatedUser.PROFILE_PIC = ""
+			if oldUserInfo.PROFILE_PIC != "" {
+				oldUserProfilePicturePathFilename := filepath.Base(oldUserInfo.PROFILE_PIC)
+				oldUserProfilePicturePathLocation := filepath.Dir(oldUserInfo.PROFILE_PIC)
+
+				deletedOldUserProfilePicturePath = filepath.Join(oldUserProfilePicturePathLocation, "__DELETED__"+oldUserProfilePicturePathFilename)
+
+				err = os.Rename(oldUserInfo.PROFILE_PIC, deletedOldUserProfilePicturePath)
+				if err != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": err.Error(),
+					})
+					return
+				}
+
+			}
+		}
+		if emptyProfilePicture != "true" {
+			if err != nil {
+				updatedUser.PROFILE_PIC = oldUserInfo.PROFILE_PIC
+				if strings.Contains(err.Error(), "request body too large") {
+					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+						"error": "File Too Large",
+					})
+					return
+				}
+			} else {
+				if profilePicture.Size > consts.MaxPictureSize {
+					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
+						"error": "Profile Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
+					})
+					return
+				}
+
+				//mark old file for deletion
+
+				if oldUserInfo.PROFILE_PIC != "" {
+					oldUserProfilePicturePathFilename := filepath.Base(oldUserInfo.PROFILE_PIC)
+					oldUserProfilePicturePathLocation := filepath.Dir(oldUserInfo.PROFILE_PIC)
+
+					deletedOldUserProfilePicturePath = filepath.Join(oldUserProfilePicturePathLocation, "__DELETED__"+oldUserProfilePicturePathFilename)
+
+					err = os.Rename(oldUserInfo.PROFILE_PIC, deletedOldUserProfilePicturePath)
+					if err != nil {
+						ctx.JSON(http.StatusInternalServerError, gin.H{
+							"error": err.Error(),
+						})
+						return
+					}
+
+				}
+
+				updatedUserProfilePicture = consts.ProfilePicDirectory + UID + filepath.Ext(profilePicture.Filename)
+				err = ctx.SaveUploadedFile(profilePicture, updatedUserProfilePicture)
+				if err != nil {
+					if oldUserInfo.PROFILE_PIC != "" {
+						FSerr := os.Rename(deletedOldUserProfilePicturePath, oldUserInfo.PROFILE_PIC)
+						if FSerr != nil {
+							ctx.JSON(http.StatusInternalServerError, gin.H{
+								"error": FSerr.Error(),
+							})
+							return
+						}
+					}
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": err.Error(),
+					})
+					return
+				}
+				updatedUser.PROFILE_PIC = updatedUserProfilePicture
+			}
+		}
+
+		err = dbUtils.UpdateUserInfo(ctx, UID, updatedUser, db)
+		if err != nil {
+
+			var FSerr error
+			if updatedUserProfilePicture != "" {
+				FSerr = os.Remove(updatedUserProfilePicture)
+				if FSerr != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": FSerr.Error(),
+					})
+					return
+				}
+			}
+			if deletedOldUserProfilePicturePath != "" {
+				FSerr = os.Rename(deletedOldUserProfilePicturePath, oldUserInfo.PROFILE_PIC)
+				if FSerr != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": FSerr.Error(),
+					})
+					return
+				}
+			}
+
+			if strings.Contains(err.Error(), "No User found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No User Found",
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Something Went Wrong!",
+			})
+			return
+		}
+
+		//delete the marked file
+		if deletedOldUserProfilePicturePath != "" {
+			err = os.Remove(deletedOldUserProfilePicturePath)
+			if err != nil {
+				ctx.JSON(http.StatusOK, gin.H{
+					"message": "Updated User",
+					"warning": "User Updated, but old Profile Picture file still exists. Request manual deletion",
+				})
+				return
+			}
+
+		}
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "User Updated",

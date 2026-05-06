@@ -215,7 +215,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		//Update Info store
-		updateRecordInfo := &dbUtils.DataInfoUpdate{}
+		updatedRecordInfo := &dbUtils.DataInfoUpdate{}
 
 		//Get Data UUID
 		uuid := ctx.Param("uuid")
@@ -236,11 +236,11 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//Get Details
-		updateRecordInfo.NAME = ctx.PostForm("NAME")
-		updateRecordInfo.DESCRIPTION = ctx.PostForm("DESCRIPTION")
+		updatedRecordInfo.NAME = ctx.PostForm("NAME")
+		updatedRecordInfo.DESCRIPTION = ctx.PostForm("DESCRIPTION")
 		emptyPreview := ctx.PostForm("emptyPreview")
 
-		if updateRecordInfo.NAME == "" {
+		if updatedRecordInfo.NAME == "" {
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No Name Provided",
 			})
@@ -270,11 +270,10 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 
 		//Get Preview-Image
 		deletedOldPreviewIMGPath := ""
-		oldPreviewIMGPath := ""
 		newPreviewIMGPath := ""
 		newPreviewIMG, err := ctx.FormFile("PREVIEW")
 		if emptyPreview == "true" {
-			updateRecordInfo.PREVIEW_IMG_PATH = ""
+			updatedRecordInfo.PREVIEW_IMG_PATH = ""
 			if oldRecordInfo.PREVIEW_IMG_PATH != "" {
 
 				deletedOldPreviewIMGPathFileName := filepath.Base(oldRecordInfo.PREVIEW_IMG_PATH)
@@ -291,7 +290,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		}
 		if emptyPreview != "true" {
 			if err != nil {
-				updateRecordInfo.PREVIEW_IMG_PATH = oldRecordInfo.PREVIEW_IMG_PATH
+				updatedRecordInfo.PREVIEW_IMG_PATH = oldRecordInfo.PREVIEW_IMG_PATH
 				if strings.Contains(err.Error(), "request body too large") {
 					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 						"error": "File too Large",
@@ -307,15 +306,13 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				}
 
 				//Mark the old image as deleted
-				oldPreviewIMGPath = oldRecordInfo.PREVIEW_IMG_PATH
+				if oldRecordInfo.PREVIEW_IMG_PATH != "" {
 
-				if oldPreviewIMGPath != "" {
-
-					deletedOldPreviewIMGPathFileName := filepath.Base(oldPreviewIMGPath)
-					deletedOldPreviewIMGPathLocation := filepath.Dir(oldPreviewIMGPath)
+					deletedOldPreviewIMGPathFileName := filepath.Base(oldRecordInfo.PREVIEW_IMG_PATH)
+					deletedOldPreviewIMGPathLocation := filepath.Dir(oldRecordInfo.PREVIEW_IMG_PATH)
 					deletedOldPreviewIMGPath = filepath.Join(deletedOldPreviewIMGPathLocation, "__DELETED__"+deletedOldPreviewIMGPathFileName)
 
-					err = os.Rename(oldPreviewIMGPath, deletedOldPreviewIMGPath)
+					err = os.Rename(oldRecordInfo.PREVIEW_IMG_PATH, deletedOldPreviewIMGPath)
 					if err != nil {
 						ctx.JSON(http.StatusInternalServerError, gin.H{
 							"error": err.Error(),
@@ -328,7 +325,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				err = ctx.SaveUploadedFile(newPreviewIMG, newPreviewIMGPath)
 				if err != nil {
 					if deletedOldPreviewIMGPath != "" {
-						FSerr := os.Rename(deletedOldPreviewIMGPath, oldPreviewIMGPath)
+						FSerr := os.Rename(deletedOldPreviewIMGPath, oldRecordInfo.PREVIEW_IMG_PATH)
 						if FSerr != nil {
 							ctx.JSON(http.StatusInternalServerError, gin.H{
 								"error": FSerr.Error(),
@@ -341,12 +338,12 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 					})
 					return
 				}
-				updateRecordInfo.PREVIEW_IMG_PATH = newPreviewIMGPath
+				updatedRecordInfo.PREVIEW_IMG_PATH = newPreviewIMGPath
 			}
 		}
 
 		//Update the actual record
-		err = dbUtils.UpdateRecord(ctx, uuid, updateRecordInfo, CreatorUID, db)
+		err = dbUtils.UpdateRecord(ctx, uuid, updatedRecordInfo, CreatorUID, db)
 		if err != nil {
 			var FSerr error
 			if newPreviewIMGPath != "" {
@@ -359,7 +356,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				}
 			}
 			if deletedOldPreviewIMGPath != "" {
-				FSerr = os.Rename(deletedOldPreviewIMGPath, oldPreviewIMGPath)
+				FSerr = os.Rename(deletedOldPreviewIMGPath, oldRecordInfo.PREVIEW_IMG_PATH)
 				if FSerr != nil {
 					ctx.JSON(http.StatusInternalServerError, gin.H{
 						"error": FSerr.Error(),
@@ -385,10 +382,11 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 			if err != nil {
 				ctx.JSON(http.StatusOK, gin.H{
 					"message": "Updated Record Successfully",
-					"warning": "Record Updated, but old file still exists. Request manual deletion",
+					"warning": "Record Updated, but old Preview file still exists. Request manual deletion",
 				})
+				return
 			}
-			return
+
 		}
 
 		ctx.JSON(http.StatusOK, gin.H{
