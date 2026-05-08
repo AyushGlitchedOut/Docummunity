@@ -439,5 +439,43 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 }
 
 func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
-	return func(ctx *gin.Context) {}
+	return func(ctx *gin.Context) {
+		searchResults := []*dbUtils.DATA{}
+
+		//Get Query
+		query := ctx.Param("query")
+		if query == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No Query Found",
+			})
+			return
+		}
+
+		//Get useDescription parameter
+		useDescription, err := strconv.ParseBool(ctx.DefaultQuery("useDescription", "false"))
+		if err != nil {
+			useDescription = false
+		}
+
+		//Search From db
+		results, err := dbUtils.SearchRecord(ctx, strings.Split(query, " "), db, useDescription)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		if len(results) < 1 {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error": "No Records Found",
+			})
+			return
+		}
+		searchResults = results
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": searchResults,
+		})
+
+	}
 }

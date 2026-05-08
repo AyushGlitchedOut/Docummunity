@@ -161,10 +161,6 @@ func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescriptio
 
 	searchCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE `
 
-	if len(query) == 0 {
-		return nil, fmt.Errorf("No Queries Provided")
-	}
-
 	var keyWords []string
 	var args []any
 	if useDescription {

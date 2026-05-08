@@ -475,6 +475,13 @@ func HandleUserDELETE(db *sql.DB, keeprecords bool) gin.HandlerFunc {
 
 func HandleUserSEARCH(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-
+		//Get Query
+		query := ctx.Param("query")
+		if query == "" {
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No Query Found",
+			})
+			return
+		}
 	}
 }
