@@ -458,20 +458,19 @@ func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//Search From db
-		results, err := dbUtils.SearchRecord(ctx, strings.Split(query, " "), db, useDescription)
+		searchResults, err = dbUtils.SearchRecord(ctx, strings.Split(query, " "), db, useDescription)
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
-		if len(results) < 1 {
+		if len(searchResults) < 1 {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"error": "No Records Found",
 			})
 			return
 		}
-		searchResults = results
 
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": searchResults,

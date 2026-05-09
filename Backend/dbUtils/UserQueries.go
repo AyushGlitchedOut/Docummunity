@@ -120,9 +120,6 @@ func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *s
 func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER_PUBLIC, error) {
 	var users []*USER_PUBLIC
 
-	if len(query) == 0 {
-		return nil, fmt.Errorf("No Queries Provided")
-	}
 	searchCommand := `SELECT UID, DISPLAY_NAME, BIO, PROFILE_PIC, CREATION_DATE FROM USERS WHERE `
 
 	var keywords []string
@@ -141,6 +138,10 @@ func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER_PUBLIC
 	for results.Next() {
 		row := &USER_PUBLIC{}
 		err = results.Scan(&row.UID, &row.DISPLAY_NAME, &row.BIO, &row.PROFILE_PIC, &row.CREATION_DATE)
+		//To prevent the user from accessing deleted exclusive user
+		if row.UID == "000" {
+			continue
+		}
 		if err != nil {
 			return nil, err
 		}

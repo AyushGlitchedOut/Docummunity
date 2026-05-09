@@ -475,6 +475,9 @@ func HandleUserDELETE(db *sql.DB, keeprecords bool) gin.HandlerFunc {
 
 func HandleUserSEARCH(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+
+		searchResults := []*dbUtils.USER_PUBLIC{}
+
 		//Get Query
 		query := ctx.Param("query")
 		if query == "" {
@@ -483,5 +486,24 @@ func HandleUserSEARCH(db *sql.DB) gin.HandlerFunc {
 			})
 			return
 		}
+
+		searchResults, err := dbUtils.SearchUser(ctx, strings.Split(query, " "), db)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": err.Error(),
+			})
+			return
+		}
+		if len(searchResults) < 1 {
+			ctx.JSON(http.StatusNotFound, gin.H{
+				"error": "No User Found for the Query",
+			})
+			return
+		}
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": searchResults,
+		})
+
 	}
 }
