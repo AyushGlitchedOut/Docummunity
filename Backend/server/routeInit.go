@@ -15,14 +15,20 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// The Main Server Function
 func InitServer(port string, db *sql.DB, firebaseApp *firebase.App) *http.Server {
+
 	router := gin.New()
-	//MaxSize
+
+	//MaxSize configuration
 	router.Use(handlers.MaxSizeMiddleware(consts.MaxDocumentSize + 2<<20)) //Max document size since its the biggest you can upload, and 2mb more for other details in the body
 	router.MaxMultipartMemory = consts.MaxPerRequestServerMemorySize
+
+	//Attach Standard Middleware
 	router.Use(gin.Logger())
 	router.Use(gin.Recovery())
-	//TEMPORARY CORS POLICY! REMOVE IN PRODUCTION
+
+	//DEBUG:REMOVE IN PRODUCTION
 	router.Use(cors.New(cors.Config{
 		AllowOrigins: []string{"http://localhost:3000"},
 		AllowMethods: []string{"GET", "POST", "DELETE", "PUT", "PATCH", "OPTIONS"},
@@ -32,13 +38,14 @@ func InitServer(port string, db *sql.DB, firebaseApp *firebase.App) *http.Server
 			"Authorization"},
 	}))
 
+	//create the http server itself which would be run, using our gin Instance as the router
 	httpServer := &http.Server{
 		Addr:              port,
 		Handler:           router,
 		MaxHeaderBytes:    256 << 10,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       2 * time.Minute,
-		WriteTimeout:      0,
+		WriteTimeout:      0, //NO Timeout basically
 		IdleTimeout:       1 * time.Minute,
 	}
 

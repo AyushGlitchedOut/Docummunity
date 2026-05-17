@@ -12,9 +12,9 @@ import (
 func CreateDataRoutes(group *gin.RouterGroup, firebaseAuth *auth.Client, db *sql.DB) {
 	dataRoutes := group.Group("/data")
 	{
-		//Auth reuired
+		//Auth required
 		protectedDataRoutes := dataRoutes.Group("/")
-		protectedDataRoutes.Use(authUtils.AuthMiddleware(firebaseAuth))
+		protectedDataRoutes.Use(authUtils.AuthMiddleware(firebaseAuth)) //Use Authentication Middleware
 		{
 			protectedDataRoutes.POST("/CREATE", handlers.HandleDataCREATE(db))
 			protectedDataRoutes.PATCH("/UPDATE/:uuid", handlers.HandleDataUPDATE(db))

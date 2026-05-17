@@ -12,7 +12,7 @@ func CreateOtherRoutes(group *gin.RouterGroup, firebaseAuth *auth.Client) {
 	{
 		//Auth Required
 		protectedOtherRoutes := otherRoutes.Group("/")
-		protectedOtherRoutes.Use(authUtils.AuthMiddleware(firebaseAuth))
+		protectedOtherRoutes.Use(authUtils.AuthMiddleware(firebaseAuth)) //Use Authentication Middleware
 		{
 			protectedOtherRoutes.POST("/test", handlers.VerifyTest)
 		}

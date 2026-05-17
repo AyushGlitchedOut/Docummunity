@@ -14,7 +14,7 @@ func CreateUserRoutes(group *gin.RouterGroup, firebaseAuth *auth.Client, db *sql
 	{
 		//Auth Required
 		protectedUserRoutes := userRoutes.Group("/")
-		protectedUserRoutes.Use(authUtils.AuthMiddleware(firebaseAuth))
+		protectedUserRoutes.Use(authUtils.AuthMiddleware(firebaseAuth)) //Use Authentication Middleware
 		{
 			protectedUserRoutes.GET("/ACCOUNT", handlers.HandleUserACCOUNT(db))
 			protectedUserRoutes.POST("/CREATE", handlers.HandleUserCREATE(db))

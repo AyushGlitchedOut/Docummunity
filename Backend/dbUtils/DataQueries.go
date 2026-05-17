@@ -14,15 +14,18 @@ import (
 //I was stuck, and took the help of ChatGPT. I undestand it now of course, but it is the only thing I couldn;t
 // think of myself and had to take the help of AI for.
 
-// Interface implementing methods so that both Transaction and DB can be used as an argument
+// Interface implementing methods so that both Transaction and DB can be used as an argument in the same function
 type DbTxCombiner interface {
 	QueryRowContext(ctx context.Context, query string, args ...any) *sql.Row
 	ExecContext(ctx context.Context, query string, args ...any) (sql.Result, error)
 	QueryContext(ctx context.Context, query string, args ...any) (*sql.Rows, error)
 }
 
+// Function to Initialize the database (Create DB file, establish connection, Create Tables, Create Deleted User)
 func InitializeDB(ctx context.Context) (*sql.DB, error) {
-	db, err := sql.Open("sqlite3", "./uploads/DATABASE.db?_foreign_keys=on")
+
+	//Open the DB file
+	DB, err := sql.Open("sqlite3", "./uploads/DATABASE.db?_foreign_keys=on")
 	if err != nil {
 		return nil, err
 	}
@@ -37,7 +40,8 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 		SETTINGS TEXT
 	);`
 
-	_, err = db.ExecContext(ctx, userCreateCommand)
+	//Create User Table
+	_, err = DB.ExecContext(ctx, userCreateCommand)
 	if err != nil {
 		return nil, err
 	}
@@ -52,19 +56,23 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 	PREVIEW_IMG_PATH TEXT,
 	FOREIGN KEY (CREATOR_ID) REFERENCES USERS(UID) ON DELETE CASCADE
 	);`
-	_, err = db.ExecContext(ctx, dataCreateCommand)
+
+	//Create Data Table
+	_, err = DB.ExecContext(ctx, dataCreateCommand)
 	if err != nil {
 		return nil, err
 	}
 
-	err = createDeletedUser(ctx, db)
+	//Create deleted User
+	err = createDeletedUser(ctx, DB)
 	if err != nil {
 		return nil, err
 	}
 
-	return db, nil
+	return DB, nil
 }
 
+// To create a Record in the Table
 func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
 	dataInsertCommand := `INSERT INTO DATA (UUID, NAME, DESCRIPTION ,FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH) VALUES (?, ?, ?, ?, ?, ?);`
 
@@ -72,60 +80,16 @@ func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
 
 	return err
 }
-func DeleteRecord(ctx context.Context, UUID string, creatorID string, db *sql.DB) error {
 
-	transaction, err := db.BeginTx(ctx, nil)
-	if err != nil {
-		return fmt.Errorf("Error Starting Transaction: %w", err)
-	}
-	defer transaction.Rollback()
-
-	record, err := GetRecord(ctx, UUID, transaction)
-	if err != nil {
-		return err
-	}
-	filePath := record.FILEPATH
-	previewPath := record.PREVIEW_IMG_PATH
-
-	dataDeleteCommand := `DELETE FROM DATA WHERE UUID = ? AND CREATOR_ID = ?`
-	results, err := transaction.ExecContext(ctx, dataDeleteCommand, UUID, creatorID)
-	if err != nil {
-		return err
-	}
-
-	rowsAffected, _ := results.RowsAffected()
-	if rowsAffected == 0 {
-		return fmt.Errorf("No Rows Found")
-	}
-
-	err = transaction.Commit()
-	if err != nil {
-		return fmt.Errorf("Failed to Commit Transaction %w", err)
-	}
-
-	//delete preview
-	if previewPath != "" {
-		err = os.Remove(previewPath)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-	}
-
-	//delete file
-	if filePath != "" {
-		err = os.Remove(filePath)
-		if err != nil && !os.IsNotExist(err) {
-			return err
-		}
-	}
-
-	return nil
-}
+// To obtain a record from the Table.
 func GetRecord(ctx context.Context, UUID string, db DbTxCombiner) (*DATA, error) {
 	data := &DATA{}
 	getRecordQuery := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE UUID = ?`
 
+	//QueryRowContext used since it returns only one row, which is what we want
 	result := db.QueryRowContext(ctx, getRecordQuery, UUID)
+
+	//scan the result into data struct
 	err := result.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -136,18 +100,86 @@ func GetRecord(ctx context.Context, UUID string, db DbTxCombiner) (*DATA, error)
 
 	return data, nil
 }
+
+// To delete a record from the table, along with its files
+func DeleteRecord(ctx context.Context, UUID string, creatorID string, db *sql.DB) error {
+
+	//Using transaction instead of DB directly for atomicity
+	transaction, err := db.BeginTx(ctx, nil)
+	if err != nil {
+		return fmt.Errorf("Error Starting Transaction: %w", err)
+	}
+
+	//make sure the transaction rollsback even if the function fails and errors
+	defer transaction.Rollback()
+
+	//Use the previously created DB function GetRecord to get additional info (paths of files to delete) about the record to delete
+	record, err := GetRecord(ctx, UUID, transaction)
+	if err != nil {
+		return err
+	}
+
+	//File and Preview Images to delete
+	filePath := record.FILEPATH
+	previewPath := record.PREVIEW_IMG_PATH
+
+	//Delete the record from the DB
+	dataDeleteCommand := `DELETE FROM DATA WHERE UUID = ? AND CREATOR_ID = ?`
+	results, err := transaction.ExecContext(ctx, dataDeleteCommand, UUID, creatorID)
+	if err != nil {
+		return err
+	}
+
+	//Error out If no rows are deleted i.e. Record Not Found
+	rowsAffected, _ := results.RowsAffected()
+	if rowsAffected == 0 {
+		return fmt.Errorf("No Rows Found")
+	}
+
+	//commit the transaction
+	err = transaction.Commit()
+	if err != nil {
+		return fmt.Errorf("Failed to Commit Transaction %w", err)
+	}
+
+	//NOTE: Preview Image and Document File are deleted once the transaction is commited because FS operations are not and cannot be atomic.
+	// If they are put inside the transaction, it will be of no use since if the transaction is rolled back upon failure of file deletion, there will be an incosistent state where the record exists but the actual files Dont.
+	//Instead, its better to completely delete the Record first and then delete the file, since orphaned files(which are possible to be cleaned up by a future tool) are better than incosistent state
+
+	//delete preview File
+	if previewPath != "" {
+		err = os.Remove(previewPath)
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+
+	//delete Document file
+	if filePath != "" {
+		err = os.Remove(filePath)
+		if err != nil && !os.IsNotExist(err) {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// To update a Record in the Table
 func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creatorID string, db *sql.DB) error {
 
 	var updateQuery string
 	var results sql.Result
 	var err error
 
+	//Update the entry
 	updateQuery = `UPDATE DATA SET NAME = ?,DESCRIPTION = ?,PREVIEW_IMG_PATH = ? WHERE UUID = ? AND CREATOR_ID = ?`
 	results, err = db.ExecContext(ctx, updateQuery, data.NAME, data.DESCRIPTION, data.PREVIEW_IMG_PATH, UID, creatorID)
 	if err != nil {
 		return err
 	}
 
+	//Error out If no rows are Updated i.e. Record Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
 		return fmt.Errorf("No Record found with UUID %s", UID)
@@ -156,11 +188,13 @@ func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creator
 	return nil
 }
 
+// To search a record by Name and/or Description query. The last boolean is useDescription, stating whether to check Description while querying or not
 func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescription bool) ([]*DATA, error) {
 	var data []*DATA
 
 	searchCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE `
 
+	//Combine the query words given into one string that can be appended to the SQL command
 	var keyWords []string
 	var args []any
 	if useDescription {
@@ -175,12 +209,15 @@ func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescriptio
 		}
 	}
 
-	results, err := db.QueryContext(ctx, searchCommand+strings.Join(keyWords, " OR "), args...)
+	//search the results
+	results, err := db.QueryContext(ctx, searchCommand+strings.Join(keyWords, " OR "), args...) //searchCommand is the initial part of SQL command, strings.Join(keywords, " OR ") constructs the repeating string of NAME/DESCRIPTION LIKE ?, and args... finally pass the queries
 	if err != nil {
 		return nil, err
 	}
+	//For results containing 1+ rows, its important to close them afterwards.
 	defer results.Close()
 
+	//scan the results into data struct
 	for results.Next() {
 		row := &DATA{}
 		err := results.Scan(&row.UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH)

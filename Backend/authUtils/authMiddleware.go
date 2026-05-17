@@ -9,11 +9,16 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// Authorization Middleware attached to all Routes that require verification.
+// Passes the UID obtained from JWT as key/value pair in ctx with key "tokenUID"
 func AuthMiddleware(firebaseAuth *auth.Client) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+
+		//Get JWT header
 		authHeader := ctx.GetHeader("Authorization")
 		token := strings.TrimPrefix(authHeader, "Bearer ")
 
+		//verify JWT
 		user, err := firebaseAuth.VerifyIDToken(ctx.Request.Context(), token)
 		if err != nil {
 			ctx.JSON(http.StatusUnauthorized, gin.H{
@@ -22,9 +27,12 @@ func AuthMiddleware(firebaseAuth *auth.Client) gin.HandlerFunc {
 			ctx.Abort()
 			return
 		}
-		fmt.Println(token)
-		ctx.Set("tokenUID", user.UID)
 
+		//DEBUG: REMOVE IN PRODUCTION
+		fmt.Println(token)
+
+		//Set the tokenUID in context
+		ctx.Set("tokenUID", user.UID)
 		ctx.Next()
 	}
 }

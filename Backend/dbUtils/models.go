@@ -1,5 +1,6 @@
 package dbUtils
 
+// Base struct for model of Data (Record)
 type DATA struct {
 	UUID             string
 	NAME             string
@@ -8,12 +9,15 @@ type DATA struct {
 	CREATOR_ID       string
 	PREVIEW_IMG_PATH string
 }
+
+// Struct to handle Info regarding updating a record
 type DataInfoUpdate struct {
 	NAME             string
 	PREVIEW_IMG_PATH string
 	DESCRIPTION      string
 }
 
+// Base struct for model of User
 type USER struct {
 	UID           string
 	DISPLAY_NAME  string
@@ -32,6 +36,7 @@ type USER_PUBLIC struct {
 	CREATION_DATE string
 }
 
+// Struct to handle Info regarding updating a User
 type UserInfoUpdate struct {
 	DISPLAY_NAME string
 	PROFILE_PIC  string

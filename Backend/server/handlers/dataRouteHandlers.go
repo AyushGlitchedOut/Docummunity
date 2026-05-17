@@ -16,57 +16,70 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+// DEBUG: Test functions
+func VerifyTest(ctx *gin.Context) {
+	token, _ := ctx.Get("tokenUID")
+	fmt.Println("Token: ", token)
+}
+
+// Test If server is active
 func HandlePING(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Server Active!",
 	})
 }
 
-// Test functions
-func VerifyTest(ctx *gin.Context) {
-	token, _ := ctx.Get("tokenUID")
-	fmt.Println("Token: ", token)
-}
-
 // Data Functions
 
+// Handler to statically Host Document Files for Records
 func HostDataFiles() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+		//Get the filename from query
 		fileName := ctx.Param("filename")
+
 		if fileName == "" {
+			//400, If the file isnt found
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No File Found for the Record",
 			})
 			return
 		}
 
+		//Construct a filepath to Serve
 		verifiedFileName := filepath.Base(fileName)
-
 		filePath := filepath.Join(consts.FileDirectory, verifiedFileName)
 
+		// Serve the File
 		ctx.File(filePath)
 	}
 }
 
+// Handler to statically Host Preview Files for Records
 func HostDataPreview() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
+
+		//Get Filename from Query
 		fileName := ctx.Param("filename")
+
 		if fileName == "" {
+			//400, If Filename isnt there
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No Preview Found for the Record",
 			})
 			return
 		}
 
+		//Construct Filename to Server
 		verifiedFileName := filepath.Base(fileName)
-
 		filePath := filepath.Join(consts.PreviewImgDirectory, verifiedFileName)
 
+		// Serve the file
 		ctx.File(filePath)
 
 	}
 }
 
+// Handler for when the User wants to fetch a Record
 func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		data := &dbUtils.DATA{}
@@ -74,27 +87,31 @@ func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 		//Get Data UUID
 		uuid := ctx.Param("uuid")
 		if uuid == "" {
+			//400, if No UUID
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No uuid found for the record",
 			})
 			return
 		}
 
-		results, err := dbUtils.GetRecord(ctx, uuid, db)
+		//Get the Record
+		data, err := dbUtils.GetRecord(ctx, uuid, db)
 		if err != nil {
+			//400, If No record found
 			if strings.Contains(err.Error(), "No Rows Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "The record doesn't exist",
 				})
 				return
 			}
+			//500, For any other DB error
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
-		data = results
 
+		//200, If All goes Well
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": data,
 		})
@@ -102,43 +119,47 @@ func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
+// Handler to Create A Record
 func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		dataRecord := &dbUtils.DATA{}
 
-		//See if file is there or not
+		//See if file is there IN the request or Not
 		document, err := ctx.FormFile("FILE")
 		if err != nil {
+			//413, IF MaxSizeMiddleware returns an error
 			if strings.Contains(err.Error(), "request body too large") {
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 					"error": "File too Large",
 				})
 				return
 			}
+			//400, For any other error
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "File Not Found!",
 			})
 			return
 		}
 
-		//Time-UUID
+		//Generate Time-UUID
 		uuid := utilities.GenerateUUID()
 		dataRecord.UUID = uuid
 
 		//Obtain Creator UID From JWT
-		CreatorUID, err := authUtils.ParseToken(ctx)
+		dataRecord.CREATOR_ID, err = authUtils.ParseToken(ctx)
 		if err != nil {
+			//400, If UID not
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
-		dataRecord.CREATOR_ID = CreatorUID
 
 		//Name and Description
 		dataRecord.NAME = ctx.PostForm("NAME")
 		dataRecord.DESCRIPTION = ctx.PostForm("DESCRIPTION")
 		if dataRecord.NAME == "" {
+			//400, IF name not present
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No Name Provided",
 			})
@@ -149,13 +170,18 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		previewIMGPath := ""
 		previewIMG, err := ctx.FormFile("PREVIEW")
 		if err == nil {
+
+			//413, If Image is bigger than Maximum Picture Size
 			if previewIMG.Size > consts.MaxPictureSize {
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 					"error": "Preview Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
 				})
 				return
 			}
+			//Construct Filepath
 			previewIMGPath = consts.PreviewImgDirectory + uuid + filepath.Ext(previewIMG.Filename)
+
+			//Save the File
 			err = ctx.SaveUploadedFile(previewIMG, previewIMGPath)
 			if err == nil {
 				dataRecord.PREVIEW_IMG_PATH = previewIMGPath
@@ -165,13 +191,17 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		//Save File
 		documentPath := consts.FileDirectory + uuid + filepath.Ext(document.Filename)
 		if document.Size > consts.MaxDocumentSize {
+			//413, If Document size exceeds Maximum Document Size
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 				"error": "File must be lesser than " + strconv.Itoa(consts.MaxDocumentSize>>20) + "mb!",
 			})
 			return
 		}
+
+		//Save the Document File
 		err = ctx.SaveUploadedFile(document, documentPath)
 		if err != nil {
+			//500, If Any errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Internal Server Error!",
 			})
@@ -182,14 +212,18 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		//Create The Record
 		err = dbUtils.CreateRecord(ctx, dataRecord, db)
 		if err != nil {
+			//If Any error during Creating the Record, Delete the Files to preserve consistency
 			FSerr := os.Remove(documentPath)
 			FSerr = os.Remove(previewIMGPath)
 			if FSerr != nil {
+				//500, If any FS error
 				ctx.JSON(http.StatusInternalServerError, gin.H{
 					"error": "Many Internal Server Errors",
 				})
 				return
 			}
+
+			//404, If The JWT given gives UID of a User that doesnt exist i.e. No foreign Key possible
 			if strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "The Supposed Creator Doesnt exist",
@@ -197,12 +231,14 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 				return
 			}
 
+			//500, If any Other errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
+		//200, If All goes well
 		ctx.JSON(http.StatusCreated, gin.H{
 			"message": "Created Record",
 		})
@@ -210,7 +246,11 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 	}
 }
 
-// DEV NOTE: I wrote this function initially without the deletion of the old file. I wrote the old-file deletion code in the commit after 4 May, and wrote the whole thing myself (see the changes between commits of 4 May and after that.). This is one of the more complex logics I have designed myself, and am proud that I wrote the entire thing without using any AI.
+// DEV NOTE: I wrote this function initially without the deletion of the old file.
+// I wrote the old-file deletion code in the commit after 4 May, and wrote the whole thing myself (see the changes between commits of 4 May and after that.).
+// This is one of the more complex logics I have designed myself, and am proud that I wrote the entire thing without using any AI.
+
+// Handler to Update the Record
 func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
@@ -220,6 +260,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Get Data UUID
 		uuid := ctx.Param("uuid")
 		if uuid == "" {
+			//400, If no UUID for data
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No uuid found for the record",
 			})
@@ -229,6 +270,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Get User's UID
 		CreatorUID, err := authUtils.ParseToken(ctx)
 		if err != nil {
+			//400, If no UID for User
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
@@ -241,12 +283,14 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		emptyPreview := ctx.PostForm("emptyPreview")
 
 		if updatedRecordInfo.NAME == "" {
+			//400, If No Name given
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No Name Provided",
 			})
 			return
 		}
 		if emptyPreview == "" {
+			//400, IF No emptyPreview argument given
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "Please provide the emptyPreview argument",
 			})
@@ -272,15 +316,25 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		deletedOldPreviewIMGPath := ""
 		newPreviewIMGPath := ""
 		newPreviewIMG, err := ctx.FormFile("PREVIEW")
+
+		//If the User want an Empty Preview Field
 		if emptyPreview == "true" {
+
+			//Make the new Preview empty
 			updatedRecordInfo.PREVIEW_IMG_PATH = ""
+
+			//Mark the old Preview File for deletion
 			if oldRecordInfo.PREVIEW_IMG_PATH != "" {
 
+				//Construct the filepath
 				deletedOldPreviewIMGPathFileName := filepath.Base(oldRecordInfo.PREVIEW_IMG_PATH)
 				deletedOldPreviewIMGPathLocation := filepath.Dir(oldRecordInfo.PREVIEW_IMG_PATH)
 				deletedOldPreviewIMGPath = filepath.Join(deletedOldPreviewIMGPathLocation, "__DELETED__"+deletedOldPreviewIMGPathFileName)
+
+				//Delete the File
 				err = os.Rename(oldRecordInfo.PREVIEW_IMG_PATH, deletedOldPreviewIMGPath)
 				if err != nil {
+					//500, For any FS error
 					ctx.JSON(http.StatusInternalServerError, gin.H{
 						"error": err.Error(),
 					})
@@ -288,9 +342,14 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				}
 			}
 		}
+
+		//If the User wants a Preview
 		if emptyPreview != "true" {
 			if err != nil {
+				//In case of error, make the new Preview the same as old one
 				updatedRecordInfo.PREVIEW_IMG_PATH = oldRecordInfo.PREVIEW_IMG_PATH
+
+				//413, If the file is too large
 				if strings.Contains(err.Error(), "request body too large") {
 					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 						"error": "File too Large",
@@ -298,6 +357,8 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 					return
 				}
 			} else {
+
+				//413, Of the file exceeds document size Limits
 				if newPreviewIMG.Size > consts.MaxPictureSize {
 					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 						"error": "Preview Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
@@ -308,12 +369,15 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				//Mark the old image as deleted
 				if oldRecordInfo.PREVIEW_IMG_PATH != "" {
 
+					//Construct the File Path
 					deletedOldPreviewIMGPathFileName := filepath.Base(oldRecordInfo.PREVIEW_IMG_PATH)
 					deletedOldPreviewIMGPathLocation := filepath.Dir(oldRecordInfo.PREVIEW_IMG_PATH)
 					deletedOldPreviewIMGPath = filepath.Join(deletedOldPreviewIMGPathLocation, "__DELETED__"+deletedOldPreviewIMGPathFileName)
 
+					//Delete the File
 					err = os.Rename(oldRecordInfo.PREVIEW_IMG_PATH, deletedOldPreviewIMGPath)
 					if err != nil {
+						//500, In case of FS error
 						ctx.JSON(http.StatusInternalServerError, gin.H{
 							"error": err.Error(),
 						})
@@ -321,18 +385,24 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 					}
 				}
 
+				//Construct the new Profile Picture
 				newPreviewIMGPath = consts.PreviewImgDirectory + uuid + filepath.Ext(newPreviewIMG.Filename)
+				//Save the new File
 				err = ctx.SaveUploadedFile(newPreviewIMG, newPreviewIMGPath)
 				if err != nil {
+					//In case of error, Un-mark the Old file for deletion
 					if deletedOldPreviewIMGPath != "" {
 						FSerr := os.Rename(deletedOldPreviewIMGPath, oldRecordInfo.PREVIEW_IMG_PATH)
 						if FSerr != nil {
+							//500, For any FS error
 							ctx.JSON(http.StatusInternalServerError, gin.H{
 								"error": FSerr.Error(),
 							})
 							return
 						}
 					}
+
+					//500, For any Errors
 					ctx.JSON(http.StatusInternalServerError, gin.H{
 						"error": err.Error(),
 					})
@@ -345,7 +415,11 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Update the actual record
 		err = dbUtils.UpdateRecord(ctx, uuid, updatedRecordInfo, CreatorUID, db)
 		if err != nil {
+
+			//If DB operation fails, we have to delete the New file and unmark the old file for deletion
 			var FSerr error
+
+			//Delete the new File saved
 			if newPreviewIMGPath != "" {
 				FSerr = os.Remove(newPreviewIMGPath)
 				if FSerr != nil {
@@ -355,6 +429,8 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 					return
 				}
 			}
+
+			//Un-mark the Old File for deletion by renaming it to its original name
 			if deletedOldPreviewIMGPath != "" {
 				FSerr = os.Rename(deletedOldPreviewIMGPath, oldRecordInfo.PREVIEW_IMG_PATH)
 				if FSerr != nil {
@@ -364,22 +440,26 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 					return
 				}
 			}
+
+			//404, IF No record found
 			if strings.Contains(err.Error(), "No Record found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Record Found for the UUID",
 				})
 				return
 			}
+			//500, For ANy other DB error
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
-		//delete the file finally
+		//Delete the file finally
 		if deletedOldPreviewIMGPath != "" {
 			err = os.Remove(deletedOldPreviewIMGPath)
 			if err != nil {
+				//200, if file deletion fails, we just tell the user to request a manual deletion of the file since its references have been aleady deleted
 				ctx.JSON(http.StatusOK, gin.H{
 					"message": "Updated Record Successfully",
 					"warning": "Record Updated, but old Preview file still exists. Request manual deletion",
@@ -389,6 +469,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 
 		}
 
+		//200, If All goes well
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "Updated Record Successfully",
 		})
@@ -402,6 +483,7 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 		//Get Data UUID
 		uuid := ctx.Param("uuid")
 		if uuid == "" {
+			//400, If No UUID found
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No uuid found for the record",
 			})
@@ -411,33 +493,39 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 		//Obtain Creator UID From JWT
 		CreatorUID, err := authUtils.ParseToken(ctx)
 		if err != nil {
+			//400, If CreatorUID not found
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
+		//Delete the Record from the DB
 		err = dbUtils.DeleteRecord(ctx, uuid, CreatorUID, db)
 
 		if err != nil {
+			//404, If Record not Found
 			if strings.Contains(err.Error(), "No Rows Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Record Found to delete!",
 				})
 				return
 			}
+			//500, for any other errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
 
+		//200, If All goes well
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": "Record Successfully Deleted",
 		})
 	}
 }
 
+// Handler for When the User wants to search a Record
 func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 		searchResults := []*dbUtils.DATA{}
@@ -445,6 +533,7 @@ func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
 		//Get Query
 		query := ctx.Param("query")
 		if query == "" {
+			//400, If query not Found
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No Query Found",
 			})
@@ -459,12 +548,15 @@ func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
 
 		//Search From db
 		searchResults, err = dbUtils.SearchRecord(ctx, strings.Split(query, " "), db, useDescription)
+
+		//500 If any DB error
 		if err != nil {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
 			})
 			return
 		}
+		//400, If NO results found
 		if len(searchResults) < 1 {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"error": "No Records Found",
@@ -472,6 +564,7 @@ func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
+		//200, Send the results If All goes well
 		ctx.JSON(http.StatusOK, gin.H{
 			"message": searchResults,
 		})
