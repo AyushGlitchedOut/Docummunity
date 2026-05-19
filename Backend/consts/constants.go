@@ -2,6 +2,14 @@ package consts
 
 // Constants used in the App
 const (
+
+	//Rate-Limits
+
+	//Requests the User can send per second to not reach their Limit
+	RequestsPerSecond = 1
+	//Maximum Requests the user can send together in a spike
+	Burst = 5
+
 	//Maximum Memory Server is allowed to use
 	MaxPerRequestServerMemorySize = 64 << 20
 

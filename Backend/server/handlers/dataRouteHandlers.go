@@ -2,7 +2,7 @@ package handlers
 
 import (
 	"database/sql"
-	"fmt"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -19,7 +19,7 @@ import (
 // DEBUG: Test functions
 func VerifyTest(ctx *gin.Context) {
 	token, _ := ctx.Get("tokenUID")
-	fmt.Println("Token: ", token)
+	log.Println("Token: ", token)
 }
 
 // Test If server is active

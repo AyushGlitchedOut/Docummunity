@@ -20,13 +20,19 @@ func InitServer(port string, db *sql.DB, firebaseApp *firebase.App) *http.Server
 
 	router := gin.New()
 
+	//Attach Standard Middleware
+	router.Use(gin.Logger())
+	router.Use(gin.Recovery())
+
 	//MaxSize configuration
 	router.Use(handlers.MaxSizeMiddleware(consts.MaxDocumentSize + 2<<20)) //Max document size since its the biggest you can upload, and 2mb more for other details in the body
 	router.MaxMultipartMemory = consts.MaxPerRequestServerMemorySize
 
-	//Attach Standard Middleware
-	router.Use(gin.Logger())
-	router.Use(gin.Recovery())
+	//Attach Rate-Limiter
+	router.Use(handlers.RateLimiter())
+
+	//No Proxies For now
+	router.SetTrustedProxies(nil)
 
 	//DEBUG:REMOVE IN PRODUCTION
 	router.Use(cors.New(cors.Config{

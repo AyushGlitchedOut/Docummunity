@@ -1,7 +1,7 @@
 package utilities
 
 import (
-	"fmt"
+	"log"
 
 	"github.com/google/uuid"
 )
@@ -10,7 +10,7 @@ import (
 func GenerateUUID() string {
 	ID, err := uuid.NewV7()
 	if err != nil {
-		fmt.Println(err)
+		log.Println(err)
 	}
 	return ID.String()
 }
