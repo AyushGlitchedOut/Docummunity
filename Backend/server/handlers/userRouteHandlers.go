@@ -223,6 +223,15 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 
 		//Profile Pic Saving logic
 		if profilePicErr == nil && pictureFile != nil {
+
+			//415, If the Profile Picture is an unsupported type
+			if filepath.Ext(pictureFile.Filename) != ".png" && filepath.Ext(pictureFile.Filename) != ".jpg" {
+				ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
+					"error": "Profile Picturw should be of type .jpg or .png",
+				})
+				return
+			}
+
 			if pictureFile.Size > consts.MaxPictureSize {
 				//413, if the image received is larger than Maximum Picture Size
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
@@ -232,11 +241,15 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 			}
 
 			//Save the image
-			path := consts.ProfilePicDirectory + user.UID + filepath.Ext(pictureFile.Filename)
+			path := filepath.Join(consts.ProfilePicDirectory, user.UID+filepath.Ext(pictureFile.Filename))
 			err = ctx.SaveUploadedFile(pictureFile, path)
-			if err == nil {
-				user.PROFILE_PIC = path
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Error Saving Profile Picture",
+				})
+				return
 			}
+			user.PROFILE_PIC = path
 		}
 
 		//Save fields from FormData
@@ -252,6 +265,17 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		//Create the User
 		err = dbUtils.CreateUser(ctx, user, db)
 		if err != nil {
+			//Delete the Profile Picture file if DB operation fails
+			if user.PROFILE_PIC != "" {
+				FSerr := os.Remove(user.PROFILE_PIC)
+				if FSerr != nil {
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": "Many Errors Together!",
+					})
+					return
+				}
+			}
+
 			//409, If User is repeating Sign-In / Sign-Up, it would try to create the User's record again
 			if strings.Contains(err.Error(), "UNIQUE constraint failed:") {
 				ctx.JSON(http.StatusConflict, gin.H{
@@ -334,6 +358,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 			//Make the new Profile Picture field empty
 			updatedUser.PROFILE_PIC = ""
 
+			//Mark the Old Profile Picture file for deletion
 			if oldUserInfo.PROFILE_PIC != "" {
 
 				//Construct Filepath for old File
@@ -370,6 +395,14 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 
 			} else {
 
+				//415, If the picture is not of Supported file types
+				if filepath.Ext(profilePicture.Filename) != ".png" && filepath.Ext(profilePicture.Filename) != ".jpg" {
+					ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
+						"error": "Please upload a supported Profile Picture format",
+					})
+					return
+				}
+
 				//413, If picture exceeds Max Picture Size
 				if profilePicture.Size > consts.MaxPictureSize {
 					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
@@ -396,7 +429,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 				}
 
 				//Construct new Profile Picture path
-				updatedUserProfilePicture = consts.ProfilePicDirectory + UID + filepath.Ext(profilePicture.Filename)
+				updatedUserProfilePicture = filepath.Join(consts.ProfilePicDirectory, UID+filepath.Ext(profilePicture.Filename))
 				//Save new Profile Picture
 				err = ctx.SaveUploadedFile(profilePicture, updatedUserProfilePicture)
 				if err != nil {

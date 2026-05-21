@@ -177,20 +177,65 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 					"error": "Preview Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
 				})
 				return
+
 			}
+
+			//415, IF the Preview has an unsupported Image Type
+			if filepath.Ext(previewIMG.Filename) != ".jpg" && filepath.Ext(previewIMGPath) != ".png" {
+				ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
+					"error": "Preview should be either .png or .jpg",
+				})
+				return
+			}
+
 			//Construct Filepath
-			previewIMGPath = consts.PreviewImgDirectory + uuid + filepath.Ext(previewIMG.Filename)
+			previewIMGPath = filepath.Join(consts.PreviewImgDirectory, uuid+filepath.Ext(previewIMG.Filename))
 
 			//Save the File
 			err = ctx.SaveUploadedFile(previewIMG, previewIMGPath)
-			if err == nil {
-				dataRecord.PREVIEW_IMG_PATH = previewIMGPath
+			if err != nil {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Error Saving Profile Picture",
+				})
+				return
 			}
+			dataRecord.PREVIEW_IMG_PATH = previewIMGPath
+
 		}
 
-		//Save File
-		documentPath := consts.FileDirectory + uuid + filepath.Ext(document.Filename)
+		//Check if the Document Uploaded matches allowed filetypes
+		if filepath.Ext(document.Filename) != ".pdf" {
+
+			//Remove the saved Preview Image if something goes wrong
+			if previewIMGPath != "" {
+				FSerr := os.Remove(previewIMGPath)
+				if FSerr != nil {
+					//500, If that file deletion too fails
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": "Many Errors Together",
+					})
+				}
+			}
+
+			//415, If the document is not of Supported Filetypes
+			ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
+				"error": "Only PDF files are allowed",
+			})
+			return
+		}
+
 		if document.Size > consts.MaxDocumentSize {
+			//Delete the previously saved Preview Image file upon error
+			if previewIMGPath != "" {
+				FSerr := os.Remove(previewIMGPath)
+				if FSerr != nil {
+					//500, IF file deletion too fails
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": "Many Errors Together",
+					})
+					return
+				}
+			}
 			//413, If Document size exceeds Maximum Document Size
 			ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 				"error": "File must be lesser than " + strconv.Itoa(consts.MaxDocumentSize>>20) + "mb!",
@@ -198,9 +243,22 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 			return
 		}
 
-		//Save the Document File
+		//Construct Filepath
+		documentPath := filepath.Join(consts.FileDirectory, uuid+filepath.Ext(document.Filename))
+
 		err = ctx.SaveUploadedFile(document, documentPath)
 		if err != nil {
+			//Delete the previously saved Preview Image if Document saving fails
+			if previewIMGPath != "" {
+				FSerr := os.Remove(previewIMGPath)
+				if FSerr != nil {
+					//500, IF file deletion fails too
+					ctx.JSON(http.StatusInternalServerError, gin.H{
+						"error": "Many Errors Together",
+					})
+					return
+				}
+			}
 			//500, If Any errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Internal Server Error!",
@@ -357,6 +415,13 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 					return
 				}
 			} else {
+
+				if filepath.Ext(newPreviewIMG.Filename) != ".jpg" && filepath.Ext(newPreviewIMG.Filename) != ".png" {
+					ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
+						"error": "Preview Image should be of type .png or .jpg",
+					})
+					return
+				}
 
 				//413, Of the file exceeds document size Limits
 				if newPreviewIMG.Size > consts.MaxPictureSize {
