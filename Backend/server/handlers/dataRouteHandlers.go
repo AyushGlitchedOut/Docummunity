@@ -338,19 +338,17 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Get Details
 		updatedRecordInfo.NAME = ctx.PostForm("NAME")
 		updatedRecordInfo.DESCRIPTION = ctx.PostForm("DESCRIPTION")
-		emptyPreview := ctx.PostForm("emptyPreview")
+
+		//Get emptyPreview Parameter
+		emptyPreview, err := strconv.ParseBool(ctx.DefaultQuery("emptyPreview", "false"))
+		if err != nil {
+			emptyPreview = false
+		}
 
 		if updatedRecordInfo.NAME == "" {
 			//400, If No Name given
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "No Name Provided",
-			})
-			return
-		}
-		if emptyPreview == "" {
-			//400, IF No emptyPreview argument given
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "Please provide the emptyPreview argument",
 			})
 			return
 		}
@@ -376,7 +374,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		newPreviewIMG, err := ctx.FormFile("PREVIEW")
 
 		//If the User want an Empty Preview Field
-		if emptyPreview == "true" {
+		if emptyPreview {
 
 			//Make the new Preview empty
 			updatedRecordInfo.PREVIEW_IMG_PATH = ""
@@ -402,7 +400,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//If the User wants a Preview
-		if emptyPreview != "true" {
+		if !emptyPreview {
 			if err != nil {
 				//In case of error, make the new Preview the same as old one
 				updatedRecordInfo.PREVIEW_IMG_PATH = oldRecordInfo.PREVIEW_IMG_PATH
@@ -451,7 +449,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				}
 
 				//Construct the new Profile Picture
-				newPreviewIMGPath = consts.PreviewImgDirectory + uuid + filepath.Ext(newPreviewIMG.Filename)
+				newPreviewIMGPath = filepath.Join(consts.PreviewImgDirectory, uuid+filepath.Ext(newPreviewIMG.Filename))
 				//Save the new File
 				err = ctx.SaveUploadedFile(newPreviewIMG, newPreviewIMGPath)
 				if err != nil {

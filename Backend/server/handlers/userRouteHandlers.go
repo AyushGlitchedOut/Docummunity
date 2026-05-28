@@ -315,18 +315,17 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 		updatedUser.DISPLAY_NAME = ctx.PostForm("NAME")
 		updatedUser.BIO = ctx.PostForm("BIO")
 		updatedUser.SETTINGS = ctx.PostForm("SETTINGS")
-		emptyProfilePicture := ctx.PostForm("emptyProfilePicture")
+
+		//Check for the emptyProfilePicture parameter
+		emptyProfilePicture, err := strconv.ParseBool(ctx.DefaultQuery("emptyProfilePicture", "false"))
+		if err != nil {
+			emptyProfilePicture = false
+		}
+
 		if updatedUser.DISPLAY_NAME == "" {
 			//400, If No DisplayName
 			ctx.JSON(http.StatusBadRequest, gin.H{
 				"error": "Display Name Not Provided",
-			})
-			return
-		}
-		if emptyProfilePicture == "" {
-			//400, If No emptyProfilePicture argument
-			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "Please Provide the emptyProfilePicture argument",
 			})
 			return
 		}
@@ -354,7 +353,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 		profilePicture, err := ctx.FormFile("PROFILE_PIC")
 
 		//If the User doesnt wanna have a profile picture, we just simply mark the old file for deletion
-		if emptyProfilePicture == "true" {
+		if emptyProfilePicture {
 			//Make the new Profile Picture field empty
 			updatedUser.PROFILE_PIC = ""
 
@@ -379,7 +378,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//If the User actually wants to have a Profile Picture
-		if emptyProfilePicture != "true" {
+		if !emptyProfilePicture {
 
 			if err != nil {
 				//Incase of Error, We make the updated filename as old filename and proceed
