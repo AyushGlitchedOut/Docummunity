@@ -265,6 +265,15 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		//Create the User
 		err = dbUtils.CreateUser(ctx, user, db)
 		if err != nil {
+			//409, If User is repeating Sign-In / Sign-Up, it would try to create the User's record again
+			if strings.Contains(err.Error(), "UNIQUE constraint failed:") {
+				ctx.JSON(http.StatusConflict, gin.H{
+					"error": "User Not Created Since it already exists",
+				})
+				return
+			}
+
+			//NOTE: PLEASE KEEP THIS BLOCK BELOW THE 409 ERROR, OTHERWISE WHEN A USER REPEATS THE CREATE USER ACTION WITH THE SAME JWT, THEIR RECORD WILL EXIST BUT THE PROFILE PICTURE WILL GET DELETED FOR NO REASON
 			//Delete the Profile Picture file if DB operation fails
 			if user.PROFILE_PIC != "" {
 				FSerr := os.Remove(user.PROFILE_PIC)
@@ -276,13 +285,6 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 				}
 			}
 
-			//409, If User is repeating Sign-In / Sign-Up, it would try to create the User's record again
-			if strings.Contains(err.Error(), "UNIQUE constraint failed:") {
-				ctx.JSON(http.StatusConflict, gin.H{
-					"error": "User Not Created Since it already exists",
-				})
-				return
-			}
 			//500, Any other DB errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": err.Error(),
