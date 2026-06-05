@@ -58,7 +58,7 @@ func GetUserAccount(ctx context.Context, UID string, db DbTxCombiner) (*USER, er
 	if err != nil {
 		//Error out If no rows are Found i.e. User Not Found
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("No Rows Found")
+			return nil, fmt.Errorf("No User Found")
 		}
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func GetUserInfo(ctx context.Context, UID string, db *sql.DB) (*USER_PUBLIC, err
 	if err != nil {
 		if err == sql.ErrNoRows {
 			//Error out If no rows are Found i.e. User Not Found
-			return nil, fmt.Errorf("No Rows Found")
+			return nil, fmt.Errorf("No User Found")
 		}
 		return nil, err
 	}
@@ -112,8 +112,14 @@ func GetUserRecords(ctx context.Context, UID string, db DbTxCombiner) ([]*DATA, 
 		records = append(records, data)
 
 	}
+	//Check for errors during scanning
 	if results.Err() != nil {
 		return nil, results.Err()
+	}
+
+	//Check if the query was empty
+	if len(records) < 1 {
+		return nil, fmt.Errorf("No Records Found")
 	}
 
 	return records, nil
@@ -132,7 +138,7 @@ func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *s
 	//Error out If no rows are Found i.e. User Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No User Found with UID %s", UID)
+		return fmt.Errorf("No User Found")
 	}
 
 	return nil
@@ -175,6 +181,9 @@ func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER_PUBLIC
 	}
 	if results.Err() != nil {
 		return nil, results.Err()
+	}
+	if len(users) < 1 {
+		return nil, fmt.Errorf("No User Found")
 	}
 
 	return users, nil
@@ -249,7 +258,7 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 	//Error out If no rows are Found i.e. User Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No User found with UID: %s", userID)
+		return fmt.Errorf("No User Found")
 	}
 
 	//Commit the Transaction

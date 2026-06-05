@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"log"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -56,7 +57,7 @@ func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 			})
 			return
 		}
-		//Make sure access to deleted user is prevented
+		//403, Make sure access to deleted user is prevented
 		if uid == dbUtils.DeletedUserInfo.UID {
 			ctx.JSON(http.StatusForbidden, gin.H{
 				"error": "Invalid UID found",
@@ -68,7 +69,7 @@ func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 		publicUserInfo, err := dbUtils.GetUserInfo(ctx, uid, db)
 		if err != nil {
 			//404 For No user found
-			if strings.Contains(err.Error(), "No Rows Found") {
+			if strings.Contains(err.Error(), "No User Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})
@@ -78,6 +79,7 @@ func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -97,7 +99,7 @@ func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
+				"error": "Invalid JWT Token",
 			})
 			return
 		}
@@ -106,7 +108,7 @@ func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 		userAccountInfo, err = dbUtils.GetUserAccount(ctx, UID, db)
 		if err != nil {
 			//404 If No user found
-			if strings.Contains(err.Error(), "No Rows Found") {
+			if strings.Contains(err.Error(), "No User Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})
@@ -116,6 +118,7 @@ func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -126,7 +129,7 @@ func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 		if err != nil {
 			//200: If any error occurs in parsing the settings i.e. Invalid JSON, we just send it without parsing
 			ctx.JSON(http.StatusOK, gin.H{
-				"error":   "Error parsing Settings, sending Unparsed",
+				"warning": "Error parsing Settings, sending Unparsed",
 				"message": userAccountInfo,
 			})
 			return
@@ -171,18 +174,19 @@ func HandleUserRecordsGET(db *sql.DB) gin.HandlerFunc {
 		//Get the Records for a user
 		userRecords, err := dbUtils.GetUserRecords(ctx, uid, db)
 		if err != nil {
+			//404, If No records found
+			if strings.Contains(err.Error(), "No Records Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No records Found for the User",
+				})
+				return
+			}
+
 			//500 for any error
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong!",
 			})
-			return
-		}
-
-		if userRecords == nil {
-			//200, if No records found
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"error": "No records Found for that User!",
-			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -215,7 +219,7 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
+				"error": "Invalid JWT Token",
 			})
 			return
 		}
@@ -281,14 +285,16 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 					ctx.JSON(http.StatusInternalServerError, gin.H{
 						"error": "Many Errors Together!",
 					})
+					log.Println("ERROR:", FSerr.Error())
 					return
 				}
 			}
 
 			//500, Any other DB errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -308,7 +314,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
+				"error": "Invalid JWT Token",
 			})
 			return
 		}
@@ -336,7 +342,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 		oldUserInfo, err := dbUtils.GetUserInfo(ctx, UID, db)
 		if err != nil {
 			//404, If the User doesnt exist
-			if strings.Contains(err.Error(), "No Rows Found") {
+			if strings.Contains(err.Error(), "No User Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})
@@ -346,6 +352,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -371,8 +378,9 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 				if err != nil {
 					//500, Incase of DB error
 					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"error": err.Error(),
+						"error": "Something Went Wrong",
 					})
+					log.Println("ERROR:", err.Error())
 					return
 				}
 
@@ -423,8 +431,9 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 					if err != nil {
 						//500, In case of any FS error
 						ctx.JSON(http.StatusInternalServerError, gin.H{
-							"error": err.Error(),
+							"error": "Something Went Wrong!",
 						})
+						log.Println("ERROR:", err.Error())
 						return
 					}
 				}
@@ -440,15 +449,17 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 						if FSerr != nil {
 							//500, In case of FS error
 							ctx.JSON(http.StatusInternalServerError, gin.H{
-								"error": FSerr.Error(),
+								"error": "Something Went Wrong!",
 							})
+							log.Println("ERROR:", FSerr.Error())
 							return
 						}
 					}
 					//500, for File saving error
 					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"error": err.Error(),
+						"error": "Something Went Wrong",
 					})
+					log.Println("ERROR:", err.Error())
 					return
 				}
 				updatedUser.PROFILE_PIC = updatedUserProfilePicture
@@ -468,8 +479,9 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 				if FSerr != nil {
 					//500 in case of FS error
 					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"error": FSerr.Error(),
+						"error": "Many Errors Together",
 					})
+					log.Println("ERROR:", FSerr.Error())
 					return
 				}
 			}
@@ -479,8 +491,9 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 				if FSerr != nil {
 					//500, in case of FS error
 					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"error": FSerr.Error(),
+						"error": "Many Errors Together!",
 					})
+					log.Println("ERROR:", FSerr.Error())
 					return
 				}
 			}
@@ -496,6 +509,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 			ctx.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -529,7 +543,7 @@ func HandleUserDELETE(db *sql.DB, keepRecords bool) gin.HandlerFunc {
 		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
+				"error": "Invalid JWT Token",
 			})
 			return
 		}
@@ -537,13 +551,13 @@ func HandleUserDELETE(db *sql.DB, keepRecords bool) gin.HandlerFunc {
 		err = dbUtils.DeleteUser(ctx, UID, db, keepRecords)
 		if err != nil {
 			//400, Both of those errors will mean the same thing, no User found
-			if strings.Contains(err.Error(), "No User found with UID:") {
+			if strings.Contains(err.Error(), "No User Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found to Delete",
 				})
 				return
 			}
-			if strings.Contains(err.Error(), "No Rows Found") {
+			if strings.Contains(err.Error(), "No Records Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found to Delete",
 				})
@@ -552,8 +566,9 @@ func HandleUserDELETE(db *sql.DB, keepRecords bool) gin.HandlerFunc {
 
 			//500, for any other errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -581,17 +596,19 @@ func HandleUserSEARCH(db *sql.DB) gin.HandlerFunc {
 		//Obtain Search Results
 		searchResults, err := dbUtils.SearchUser(ctx, strings.Split(query, " "), db)
 		if err != nil {
+			//404, if No user found
+			if strings.Contains(err.Error(), "No User Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No User Found",
+				})
+				return
+			}
+
 			//500, for any DB errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong!",
 			})
-			return
-		}
-		if len(searchResults) < 1 {
-			//404, if no User is found for the query
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"error": "No User Found for the Query",
-			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 

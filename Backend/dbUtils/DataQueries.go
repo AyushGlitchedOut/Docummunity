@@ -93,7 +93,7 @@ func GetRecord(ctx context.Context, UUID string, db DbTxCombiner) (*DATA, error)
 	err := result.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("No Rows Found")
+			return nil, fmt.Errorf("No Records Found")
 		}
 		return nil, err
 	}
@@ -133,7 +133,7 @@ func DeleteRecord(ctx context.Context, UUID string, creatorID string, db *sql.DB
 	//Error out If no rows are deleted i.e. Record Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No Rows Found")
+		return fmt.Errorf("No Records Found")
 	}
 
 	//commit the transaction
@@ -182,7 +182,7 @@ func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creator
 	//Error out If no rows are Updated i.e. Record Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No Record found with UUID %s", UID)
+		return fmt.Errorf("No Records Found")
 	}
 
 	return nil
@@ -228,6 +228,9 @@ func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescriptio
 	}
 	if results.Err() != nil {
 		return nil, results.Err()
+	}
+	if len(data) < 1 {
+		return nil, fmt.Errorf("No Records Found")
 	}
 
 	return data, nil

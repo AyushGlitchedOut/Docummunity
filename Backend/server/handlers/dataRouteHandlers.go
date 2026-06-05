@@ -89,7 +89,7 @@ func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 		if uuid == "" {
 			//400, if No UUID
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "No uuid found for the record",
+				"error": "No UUID found for the record",
 			})
 			return
 		}
@@ -98,16 +98,17 @@ func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 		data, err := dbUtils.GetRecord(ctx, uuid, db)
 		if err != nil {
 			//400, If No record found
-			if strings.Contains(err.Error(), "No Rows Found") {
+			if strings.Contains(err.Error(), "No Records Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
-					"error": "The record doesn't exist",
+					"error": "No Records Found",
 				})
 				return
 			}
 			//500, For any other DB error
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -150,7 +151,7 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		if err != nil {
 			//400, If UID not
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
+				"error": "Invalid JWT Token",
 			})
 			return
 		}
@@ -214,6 +215,8 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 					ctx.JSON(http.StatusInternalServerError, gin.H{
 						"error": "Many Errors Together",
 					})
+					log.Println("ERROR:", FSerr.Error())
+					return
 				}
 			}
 
@@ -233,6 +236,7 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 					ctx.JSON(http.StatusInternalServerError, gin.H{
 						"error": "Many Errors Together",
 					})
+					log.Println("ERROR:", FSerr.Error())
 					return
 				}
 			}
@@ -256,13 +260,15 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 					ctx.JSON(http.StatusInternalServerError, gin.H{
 						"error": "Many Errors Together",
 					})
+					log.Println("ERROR:", FSerr.Error())
 					return
 				}
 			}
 			//500, If Any errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Internal Server Error!",
+				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 		dataRecord.FILEPATH = documentPath
@@ -276,8 +282,9 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 			if FSerr != nil {
 				//500, If any FS error
 				ctx.JSON(http.StatusInternalServerError, gin.H{
-					"error": "Many Internal Server Errors",
+					"error": "Many Errors Together!",
 				})
+				log.Println("ERROR:", FSerr.Error())
 				return
 			}
 
@@ -291,8 +298,9 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 
 			//500, If any Other errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -320,7 +328,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		if uuid == "" {
 			//400, If no UUID for data
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "No uuid found for the record",
+				"error": "No UUID found for the record",
 			})
 			return
 		}
@@ -330,7 +338,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		if err != nil {
 			//400, If no UID for User
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
+				"error": "Invalid JWT Token",
 			})
 			return
 		}
@@ -356,15 +364,16 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Get Old Record Info
 		oldRecordInfo, err := dbUtils.GetRecord(ctx, uuid, db)
 		if err != nil {
-			if strings.Contains(err.Error(), "No Rows Found") {
+			if strings.Contains(err.Error(), "No Records Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "The record doesn't exist",
 				})
 				return
 			}
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -392,8 +401,9 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				if err != nil {
 					//500, For any FS error
 					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"error": err.Error(),
+						"error": "Something Went Wrong!",
 					})
+					log.Println("ERROR:", err.Error())
 					return
 				}
 			}
@@ -442,8 +452,9 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 					if err != nil {
 						//500, In case of FS error
 						ctx.JSON(http.StatusInternalServerError, gin.H{
-							"error": err.Error(),
+							"error": "Something Went Wrong!",
 						})
+						log.Println("ERROR:", err.Error())
 						return
 					}
 				}
@@ -459,16 +470,18 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 						if FSerr != nil {
 							//500, For any FS error
 							ctx.JSON(http.StatusInternalServerError, gin.H{
-								"error": FSerr.Error(),
+								"error": "Many Errors Together",
 							})
+							log.Println("ERROR:", FSerr.Error())
 							return
 						}
 					}
 
 					//500, For any Errors
 					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"error": err.Error(),
+						"error": "Something Went Wrong!",
 					})
+					log.Println("ERROR:", err.Error())
 					return
 				}
 				updatedRecordInfo.PREVIEW_IMG_PATH = newPreviewIMGPath
@@ -487,8 +500,9 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				FSerr = os.Remove(newPreviewIMGPath)
 				if FSerr != nil {
 					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"error": FSerr.Error(),
+						"error": "Many Errors Together",
 					})
+					log.Println("ERROR:", FSerr.Error())
 					return
 				}
 			}
@@ -498,14 +512,15 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				FSerr = os.Rename(deletedOldPreviewIMGPath, oldRecordInfo.PREVIEW_IMG_PATH)
 				if FSerr != nil {
 					ctx.JSON(http.StatusInternalServerError, gin.H{
-						"error": FSerr.Error(),
+						"error": "Many Errors Together",
 					})
+					log.Println("ERROR:", err.Error())
 					return
 				}
 			}
 
 			//404, IF No record found
-			if strings.Contains(err.Error(), "No Record found") {
+			if strings.Contains(err.Error(), "No Records Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Record Found for the UUID",
 				})
@@ -513,8 +528,9 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 			}
 			//500, For ANy other DB error
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -548,7 +564,7 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 		if uuid == "" {
 			//400, If No UUID found
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": "No uuid found for the record",
+				"error": "No UUID found for the record",
 			})
 			return
 		}
@@ -558,7 +574,7 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 		if err != nil {
 			//400, If CreatorUID not found
 			ctx.JSON(http.StatusBadRequest, gin.H{
-				"error": err.Error(),
+				"error": "Invalid JWT Token",
 			})
 			return
 		}
@@ -568,7 +584,7 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 
 		if err != nil {
 			//404, If Record not Found
-			if strings.Contains(err.Error(), "No Rows Found") {
+			if strings.Contains(err.Error(), "No Records Found") {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Record Found to delete!",
 				})
@@ -576,8 +592,9 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 			}
 			//500, for any other errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong!",
 			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 
@@ -614,16 +631,17 @@ func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
 
 		//500 If any DB error
 		if err != nil {
+			//400, IF No record is found
+			if strings.Contains(err.Error(), "No Records Found") {
+				ctx.JSON(http.StatusNotFound, gin.H{
+					"error": "No Records Found",
+				})
+				return
+			}
 			ctx.JSON(http.StatusInternalServerError, gin.H{
-				"error": err.Error(),
+				"error": "Something Went Wrong",
 			})
-			return
-		}
-		//400, If NO results found
-		if len(searchResults) < 1 {
-			ctx.JSON(http.StatusNotFound, gin.H{
-				"error": "No Records Found",
-			})
+			log.Println("ERROR:", err.Error())
 			return
 		}
 

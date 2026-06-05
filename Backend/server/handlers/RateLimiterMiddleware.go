@@ -60,15 +60,21 @@ func getRateLimiterForAddress(IP string) *rate.Limiter {
 func StartClientListCleanupService() {
 	go func() {
 		for {
+
+			//The service runs every minute
 			time.Sleep(time.Minute)
+
+			//Lock the Mutex
 			mu.Lock()
 
+			//Remove all IPs who have not done a single request in the last 10 minutes
 			for IP, client := range clientList {
 				if time.Since(client.LastRequest) > 10*time.Minute {
 					delete(clientList, IP)
 				}
 			}
 
+			//Unlock Mutex
 			mu.Unlock()
 
 		}
