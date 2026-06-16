@@ -4,7 +4,6 @@ package consts
 const (
 
 	//Rate-Limits
-
 	//Requests the User can send per second to not reach their Limit
 	RequestsPerSecond = 1
 	//Maximum Requests the user can send together in a spike
@@ -23,3 +22,17 @@ const (
 	FileDirectory       = UploadsDirectory + "/FILES/"
 	PreviewImgDirectory = UploadsDirectory + "/PREVIEW/"
 )
+
+// Outside const since only primary types can be used in const declaration
+
+// Image Types Allowed
+var AllowedImageExtensions = []string{
+	"image/jpeg",
+	"image/png",
+	"image/webp",
+}
+
+// Document Types allowed
+var AllowedDocumentExtensions = []string{
+	"application/pdf",
+}

@@ -170,21 +170,21 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		//Save Preview Img
 		previewIMGPath := ""
 		previewIMG, err := ctx.FormFile("PREVIEW")
-		if err == nil {
 
+		if err == nil {
 			//413, If Image is bigger than Maximum Picture Size
 			if previewIMG.Size > consts.MaxPictureSize {
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 					"error": "Preview Picture should be less than " + strconv.Itoa(consts.MaxPictureSize>>20) + "mb!",
 				})
 				return
-
 			}
 
-			//415, IF the Preview has an unsupported Image Type
-			if filepath.Ext(previewIMG.Filename) != ".jpg" && filepath.Ext(previewIMGPath) != ".png" {
+			//415, If the Preview Image has an unsupported Image Type
+			fileTypeValid, err := filetypeDetector(previewIMG, consts.AllowedImageExtensions)
+			if !fileTypeValid || err != nil {
 				ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
-					"error": "Preview should be either .png or .jpg",
+					"error": "Preview should be a PNG, JPEG or WEBP file",
 				})
 				return
 			}
@@ -205,7 +205,9 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		}
 
 		//Check if the Document Uploaded matches allowed filetypes
-		if filepath.Ext(document.Filename) != ".pdf" {
+		fileTypeValid, err := filetypeDetector(document, consts.AllowedDocumentExtensions)
+
+		if !fileTypeValid || err != nil {
 
 			//Remove the saved Preview Image if something goes wrong
 			if previewIMGPath != "" {
@@ -392,9 +394,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 			if oldRecordInfo.PREVIEW_IMG_PATH != "" {
 
 				//Construct the filepath
-				deletedOldPreviewIMGPathFileName := filepath.Base(oldRecordInfo.PREVIEW_IMG_PATH)
-				deletedOldPreviewIMGPathLocation := filepath.Dir(oldRecordInfo.PREVIEW_IMG_PATH)
-				deletedOldPreviewIMGPath = filepath.Join(deletedOldPreviewIMGPathLocation, "__DELETED__"+deletedOldPreviewIMGPathFileName)
+				deletedOldPreviewIMGPath = deletedFilePathMaker(oldRecordInfo.PREVIEW_IMG_PATH)
 
 				//Delete the File
 				err = os.Rename(oldRecordInfo.PREVIEW_IMG_PATH, deletedOldPreviewIMGPath)
@@ -424,9 +424,11 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				}
 			} else {
 
-				if filepath.Ext(newPreviewIMG.Filename) != ".jpg" && filepath.Ext(newPreviewIMG.Filename) != ".png" {
+				//415, If the Preview Image has an unsupported Image Type
+				filetypeValid, err := filetypeDetector(newPreviewIMG, consts.AllowedImageExtensions)
+				if !filetypeValid || err != nil {
 					ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
-						"error": "Preview Image should be of type .png or .jpg",
+						"error": "Preview should be a PNG, JPEG or WEBP file",
 					})
 					return
 				}
@@ -443,9 +445,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 				if oldRecordInfo.PREVIEW_IMG_PATH != "" {
 
 					//Construct the File Path
-					deletedOldPreviewIMGPathFileName := filepath.Base(oldRecordInfo.PREVIEW_IMG_PATH)
-					deletedOldPreviewIMGPathLocation := filepath.Dir(oldRecordInfo.PREVIEW_IMG_PATH)
-					deletedOldPreviewIMGPath = filepath.Join(deletedOldPreviewIMGPathLocation, "__DELETED__"+deletedOldPreviewIMGPathFileName)
+					deletedOldPreviewIMGPath = deletedFilePathMaker(oldRecordInfo.PREVIEW_IMG_PATH)
 
 					//Delete the File
 					err = os.Rename(oldRecordInfo.PREVIEW_IMG_PATH, deletedOldPreviewIMGPath)

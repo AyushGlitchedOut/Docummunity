@@ -228,10 +228,11 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		//Profile Pic Saving logic
 		if profilePicErr == nil && pictureFile != nil {
 
-			//415, If the Profile Picture is an unsupported type
-			if filepath.Ext(pictureFile.Filename) != ".png" && filepath.Ext(pictureFile.Filename) != ".jpg" {
+			//415, If the Preview Image has an unsupported Image Type
+			filetypeValid, err := filetypeDetector(pictureFile, consts.AllowedImageExtensions)
+			if !filetypeValid || err != nil {
 				ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
-					"error": "Profile Picturw should be of type .jpg or .png",
+					"error": "Profile Picture should be a PNG, JPEG or WEBP file",
 				})
 				return
 			}
@@ -370,9 +371,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 			if oldUserInfo.PROFILE_PIC != "" {
 
 				//Construct Filepath for old File
-				oldUserProfilePicturePathFilename := filepath.Base(oldUserInfo.PROFILE_PIC)
-				oldUserProfilePicturePathLocation := filepath.Dir(oldUserInfo.PROFILE_PIC)
-				deletedOldUserProfilePicturePath = filepath.Join(oldUserProfilePicturePathLocation, "__DELETED__"+oldUserProfilePicturePathFilename)
+				deletedOldUserProfilePicturePath = deletedFilePathMaker(oldUserInfo.PROFILE_PIC)
 
 				err = os.Rename(oldUserInfo.PROFILE_PIC, deletedOldUserProfilePicturePath)
 				if err != nil {
@@ -404,10 +403,11 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 
 			} else {
 
-				//415, If the picture is not of Supported file types
-				if filepath.Ext(profilePicture.Filename) != ".png" && filepath.Ext(profilePicture.Filename) != ".jpg" {
+				//415, If the Profile Picture has an unsupported Image Type
+				filetypeValid, err := filetypeDetector(profilePicture, consts.AllowedImageExtensions)
+				if !filetypeValid || err != nil {
 					ctx.JSON(http.StatusUnsupportedMediaType, gin.H{
-						"error": "Please upload a supported Profile Picture format",
+						"error": "Profile Picture should be a PNG, JPEG or WEBP file",
 					})
 					return
 				}
@@ -423,9 +423,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 				//mark old file for deletion
 				if oldUserInfo.PROFILE_PIC != "" {
 					//Construct Filepath for old file
-					oldUserProfilePicturePathFilename := filepath.Base(oldUserInfo.PROFILE_PIC)
-					oldUserProfilePicturePathLocation := filepath.Dir(oldUserInfo.PROFILE_PIC)
-					deletedOldUserProfilePicturePath = filepath.Join(oldUserProfilePicturePathLocation, "__DELETED__"+oldUserProfilePicturePathFilename)
+					deletedOldUserProfilePicturePath = deletedFilePathMaker(oldUserInfo.PROFILE_PIC)
 
 					err = os.Rename(oldUserInfo.PROFILE_PIC, deletedOldUserProfilePicturePath)
 					if err != nil {
