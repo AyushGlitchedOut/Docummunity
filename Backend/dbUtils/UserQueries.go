@@ -222,7 +222,9 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 		//Get all records belonging to the user
 		records, err = GetUserRecords(ctx, userID, transaction)
 		if err != nil {
-			return err
+			if !strings.Contains(err.Error(), "No Records Found") {
+				return err
+			}
 		}
 
 		//append the filepaths for document files and preview Images to a seperate array

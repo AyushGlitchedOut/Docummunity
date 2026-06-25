@@ -555,12 +555,6 @@ func HandleUserDELETE(db *sql.DB, keepRecords bool) gin.HandlerFunc {
 				})
 				return
 			}
-			if strings.Contains(err.Error(), "No Records Found") {
-				ctx.JSON(http.StatusNotFound, gin.H{
-					"error": "No User Found to Delete",
-				})
-				return
-			}
 
 			//500, for any other errors
 			ctx.JSON(http.StatusInternalServerError, gin.H{
