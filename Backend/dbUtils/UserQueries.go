@@ -222,6 +222,7 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 		//Get all records belonging to the user
 		records, err = GetUserRecords(ctx, userID, transaction)
 		if err != nil {
+			//Dont return error if Its just that NO records were found for the User
 			if !strings.Contains(err.Error(), "No Records Found") {
 				return err
 			}

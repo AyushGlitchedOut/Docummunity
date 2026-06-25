@@ -3,8 +3,13 @@ package main
 import (
 	"context"
 	"log"
+	"net/http"
+	"os"
+	"os/signal"
+	"syscall"
 
 	"github.com/AyushGlitchedOut/Docummunity/authUtils"
+	"github.com/AyushGlitchedOut/Docummunity/consts"
 	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
 	"github.com/AyushGlitchedOut/Docummunity/server"
 	"github.com/AyushGlitchedOut/Docummunity/server/handlers"
@@ -12,7 +17,6 @@ import (
 )
 
 func main() {
-	port := ":8080"
 
 	//Configure Firebase Admin SDK
 	firebase := authUtils.FirebaseAppCreator()
@@ -25,21 +29,42 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	//make sure DB connection closes once the App closes
 	defer DB.Close()
 
 	log.Println("-----------------------------------------DOCUMMUNITY BACKEND-------------------------------------")
 
-	//Initialize the App instance
-	app := server.InitServer(port, DB, firebase)
+	app := server.InitServer(consts.Port, DB, firebase)
 
 	//Start the ClientList Cleanup service
 	handlers.StartClientListCleanupService()
 
-	//Run the Server, which will pause the main program at this point and not execute any code written below this
-	if err := app.ListenAndServe(); err != nil {
-		log.Fatal("Failed to run server: ", err)
+	go func() {
+		//Run the Server
+		if err := app.ListenAndServe(); err != nil {
+			if err != http.ErrServerClosed {
+				log.Fatal("Failed to run server: ", err)
+			}
+		}
+	}()
+
+	//Setup For Graceful Shutdown:
+	exitDetector := make(chan os.Signal, 1)
+	signal.Notify(exitDetector, syscall.SIGINT, syscall.SIGTERM)
+	defer signal.Stop(exitDetector)
+
+	//Detect termination message and receive it
+	message := <-exitDetector
+
+	//Set Timelimit for the shutdown process
+	cancelCtx, cancel := context.WithTimeout(context.Background(), consts.ShutdownTimeLimit)
+	defer cancel()
+
+	//Shutdown the HTTP server
+	err = app.Shutdown(cancelCtx)
+	if err != nil {
+		log.Println("Error Shutting Down Server: ", err)
 	}
 
-	//-------------------NO CODE BELOW HERE------------------//
+	log.Println("SHUTTING DOWN SERVER: ", message)
+
 }

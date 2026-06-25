@@ -1,7 +1,14 @@
 package consts
 
+import "time"
+
 // Constants used in the App
 const (
+	//Server Port
+	Port = ":8080"
+
+	//Shutdown Time-Limit
+	ShutdownTimeLimit = 5 * time.Second
 
 	//Rate-Limits
 	//Requests the User can send per second to not reach their Limit
