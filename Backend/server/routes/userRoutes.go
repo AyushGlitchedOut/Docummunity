@@ -19,8 +19,8 @@ func CreateUserRoutes(group *gin.RouterGroup, firebaseAuth *auth.Client, db *sql
 			protectedUserRoutes.GET("/ACCOUNT", handlers.HandleUserACCOUNT(db))
 			protectedUserRoutes.POST("/CREATE", handlers.HandleUserCREATE(db))
 			protectedUserRoutes.PATCH("/UPDATE", handlers.HandleUserUPDATE(db))
-			protectedUserRoutes.DELETE("/DELETE", handlers.HandleUserDELETE(db, true))
-			protectedUserRoutes.DELETE("/DELETE/FULL", handlers.HandleUserDELETE(db, false))
+			protectedUserRoutes.DELETE("/DELETE", handlers.HandleUserDELETE(db, firebaseAuth, true))
+			protectedUserRoutes.DELETE("/DELETE/FULL", handlers.HandleUserDELETE(db, firebaseAuth, false))
 		}
 
 		//Free Routes

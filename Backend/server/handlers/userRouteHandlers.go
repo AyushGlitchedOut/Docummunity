@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"firebase.google.com/go/auth"
 	"github.com/AyushGlitchedOut/Docummunity/authUtils"
 	"github.com/AyushGlitchedOut/Docummunity/consts"
 	"github.com/AyushGlitchedOut/Docummunity/dbUtils"
@@ -98,7 +99,8 @@ func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 		//Obtain UID From JWT
 		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
+			//401, If No UserID found
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid JWT Token",
 			})
 			return
@@ -218,7 +220,8 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		//Obtain UID From JWT
 		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
+			//401, No UserID found
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid JWT Token",
 			})
 			return
@@ -314,7 +317,8 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Obtain UID From JWT
 		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
+			//401, No UserID Found
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid JWT Token",
 			})
 			return
@@ -534,13 +538,14 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 }
 
 // Handler to Delete a User, the boolean is keepRecords, stating whether to delete the records with the User
-func HandleUserDELETE(db *sql.DB, keepRecords bool) gin.HandlerFunc {
+func HandleUserDELETE(db *sql.DB, firebaseAuth *auth.Client, keepRecords bool) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
 
 		//Obtain UID From JWT
 		UID, err := authUtils.ParseToken(ctx)
 		if err != nil {
-			ctx.JSON(http.StatusBadRequest, gin.H{
+			//No UserID Found
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid JWT Token",
 			})
 			return
@@ -561,6 +566,22 @@ func HandleUserDELETE(db *sql.DB, keepRecords bool) gin.HandlerFunc {
 				"error": "Something Went Wrong",
 			})
 			log.Println("ERROR:", err.Error())
+			return
+		}
+
+		//Delete the User from Firebase as well
+		err = firebaseAuth.DeleteUser(ctx, UID)
+		if err != nil {
+			//200, If the user doesnt already exits for some reason
+			if auth.IsUserNotFound(err) {
+				ctx.JSON(http.StatusOK, gin.H{
+					"message": "User Successfully Deleted, Records Preserved: " + strconv.FormatBool(keepRecords),
+				})
+				return
+			}
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"message": "Your Account and its Info were successfully deleted but there was some issue deleting your Authentication. Records Preserved: " + strconv.FormatBool(keepRecords),
+			})
 			return
 		}
 

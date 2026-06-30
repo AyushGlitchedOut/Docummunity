@@ -149,8 +149,8 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		//Obtain Creator UID From JWT
 		dataRecord.CREATOR_ID, err = authUtils.ParseToken(ctx)
 		if err != nil {
-			//400, If UID not
-			ctx.JSON(http.StatusBadRequest, gin.H{
+			//401, If UID not Provided
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid JWT Token",
 			})
 			return
@@ -338,8 +338,8 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Get User's UID
 		CreatorUID, err := authUtils.ParseToken(ctx)
 		if err != nil {
-			//400, If no UID for User
-			ctx.JSON(http.StatusBadRequest, gin.H{
+			//401, If no UID for User
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid JWT Token",
 			})
 			return
@@ -572,8 +572,8 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 		//Obtain Creator UID From JWT
 		CreatorUID, err := authUtils.ParseToken(ctx)
 		if err != nil {
-			//400, If CreatorUID not found
-			ctx.JSON(http.StatusBadRequest, gin.H{
+			//401, If CreatorUID not found
+			ctx.JSON(http.StatusUnauthorized, gin.H{
 				"error": "Invalid JWT Token",
 			})
 			return
