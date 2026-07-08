@@ -10,7 +10,7 @@ import (
 func GenerateUUID() string {
 	ID, err := uuid.NewV7()
 	if err != nil {
-		log.Println(err)
+		log.Println("CRITICAL: GLITCHED OUT UUID:", err)
 	}
 	return ID.String()
 }

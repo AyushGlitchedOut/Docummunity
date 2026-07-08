@@ -3,10 +3,13 @@ package dbUtils
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"log"
 	"os"
 	"strings"
+
+	"github.com/AyushGlitchedOut/Docummunity/consts"
 )
 
 // Constant User data for reserved deleted User
@@ -39,6 +42,10 @@ func CreateUser(ctx context.Context, user *USER, db *sql.DB) error {
 
 	_, err := db.ExecContext(ctx, userInsertCommand, user.UID, user.DISPLAY_NAME, user.BIO, user.PROFILE_PIC, user.CREATION_DATE, user.SETTINGS)
 	if err != nil {
+		//TODO: After switching to final server, make it so this error is also not string-checked
+		if strings.Contains(err.Error(), "UNIQUE constraint failed:") {
+			return consts.ErrorUNIQUEConstraintFailed
+		}
 		return err
 	}
 
@@ -57,8 +64,8 @@ func GetUserAccount(ctx context.Context, UID string, db DbTxCombiner) (*USER, er
 	err := result.Scan(&user.UID, &user.DISPLAY_NAME, &user.BIO, &user.PROFILE_PIC, &user.CREATION_DATE, &user.SETTINGS)
 	if err != nil {
 		//Error out If no rows are Found i.e. User Not Found
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("No User Found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, consts.ErrorUserNotFound
 		}
 		return nil, err
 	}
@@ -77,9 +84,9 @@ func GetUserInfo(ctx context.Context, UID string, db *sql.DB) (*USER_PUBLIC, err
 	//Scan the results into user struct
 	err := result.Scan(&user.UID, &user.DISPLAY_NAME, &user.BIO, &user.PROFILE_PIC, &user.CREATION_DATE)
 	if err != nil {
-		if err == sql.ErrNoRows {
+		if errors.Is(err, sql.ErrNoRows) {
 			//Error out If no rows are Found i.e. User Not Found
-			return nil, fmt.Errorf("No User Found")
+			return nil, consts.ErrorUserNotFound
 		}
 		return nil, err
 	}
@@ -119,7 +126,7 @@ func GetUserRecords(ctx context.Context, UID string, db DbTxCombiner) ([]*DATA, 
 
 	//Check if the query was empty
 	if len(records) < 1 {
-		return nil, fmt.Errorf("No Records Found")
+		return nil, consts.ErrorNoRecordFound
 	}
 
 	return records, nil
@@ -138,7 +145,7 @@ func UpdateUserInfo(ctx context.Context, UID string, data *UserInfoUpdate, db *s
 	//Error out If no rows are Found i.e. User Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No User Found")
+		return consts.ErrorUserNotFound
 	}
 
 	return nil
@@ -183,7 +190,7 @@ func SearchUser(ctx context.Context, query []string, db *sql.DB) ([]*USER_PUBLIC
 		return nil, results.Err()
 	}
 	if len(users) < 1 {
-		return nil, fmt.Errorf("No User Found")
+		return nil, consts.ErrorUserNotFound
 	}
 
 	return users, nil
@@ -223,7 +230,7 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 		records, err = GetUserRecords(ctx, userID, transaction)
 		if err != nil {
 			//Dont return error if Its just that NO records were found for the User
-			if !strings.Contains(err.Error(), "No Records Found") {
+			if !errors.Is(err, consts.ErrorNoRecordFound) {
 				return err
 			}
 		}
@@ -261,7 +268,7 @@ func DeleteUser(ctx context.Context, userID string, db *sql.DB, keepRecords bool
 	//Error out If no rows are Found i.e. User Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No User Found")
+		return consts.ErrorUserNotFound
 	}
 
 	//Commit the Transaction

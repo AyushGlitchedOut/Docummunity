@@ -58,7 +58,7 @@ func InitServer(port string, db *sql.DB, firebaseApp *firebase.App) *http.Server
 	//Get Auth Function from Firebase App
 	firebaseAuth, err := firebaseApp.Auth(context.Background())
 	if err != nil {
-		log.Fatal("Error Configuring Firebase Admin SDK")
+		log.Fatal("Error Configuring Firebase Admin SDK:", err)
 	}
 
 	//Routing system

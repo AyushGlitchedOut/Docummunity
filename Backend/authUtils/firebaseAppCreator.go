@@ -16,7 +16,7 @@ func FirebaseAppCreator() *firebase.App {
 	app, err := firebase.NewApp(context.Background(), nil, opt)
 
 	if err != nil {
-		log.Fatal("Error Initializing The ADMIN SDK")
+		log.Fatal("Error Initializing The ADMIN SDK:", err)
 	}
 
 	return app

@@ -27,7 +27,7 @@ func main() {
 	//Initialize Database
 	DB, err := dbUtils.InitializeDB(context.Background())
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("ERROR INITIALIZING DATABASE:", err)
 	}
 	defer DB.Close()
 

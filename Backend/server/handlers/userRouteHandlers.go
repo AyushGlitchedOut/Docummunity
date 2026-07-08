@@ -3,6 +3,7 @@ package handlers
 import (
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -70,7 +71,7 @@ func HandleUserGET(db *sql.DB) gin.HandlerFunc {
 		publicUserInfo, err := dbUtils.GetUserInfo(ctx, uid, db)
 		if err != nil {
 			//404 For No user found
-			if strings.Contains(err.Error(), "No User Found") {
+			if errors.Is(err, consts.ErrorUserNotFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})
@@ -110,7 +111,7 @@ func HandleUserACCOUNT(db *sql.DB) gin.HandlerFunc {
 		userAccountInfo, err = dbUtils.GetUserAccount(ctx, UID, db)
 		if err != nil {
 			//404 If No user found
-			if strings.Contains(err.Error(), "No User Found") {
+			if errors.Is(err, consts.ErrorUserNotFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})
@@ -177,7 +178,7 @@ func HandleUserRecordsGET(db *sql.DB) gin.HandlerFunc {
 		userRecords, err := dbUtils.GetUserRecords(ctx, uid, db)
 		if err != nil {
 			//404, If No records found
-			if strings.Contains(err.Error(), "No Records Found") {
+			if errors.Is(err, consts.ErrorNoRecordFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No records Found for the User",
 				})
@@ -210,6 +211,7 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		if profilePicErr != nil {
 			//413, if we get error from MaxSizeMiddleware while parsing the request
 			if strings.Contains(profilePicErr.Error(), "request body too large") {
+				//TODO: Remove string matching here
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 					"error": "File too Large",
 				})
@@ -274,7 +276,7 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		err = dbUtils.CreateUser(ctx, user, db)
 		if err != nil {
 			//409, If User is repeating Sign-In / Sign-Up, it would try to create the User's record again
-			if strings.Contains(err.Error(), "UNIQUE constraint failed:") {
+			if errors.Is(err, consts.ErrorUNIQUEConstraintFailed) {
 				ctx.JSON(http.StatusConflict, gin.H{
 					"error": "User Not Created Since it already exists",
 				})
@@ -347,7 +349,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 		oldUserInfo, err := dbUtils.GetUserInfo(ctx, UID, db)
 		if err != nil {
 			//404, If the User doesnt exist
-			if strings.Contains(err.Error(), "No User Found") {
+			if errors.Is(err, consts.ErrorUserNotFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})
@@ -399,6 +401,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 
 				//413, If File too large from MaxSizeMiddleware
 				if strings.Contains(err.Error(), "request body too large") {
+					//TODO: Remove string matching here
 					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 						"error": "File Too Large",
 					})
@@ -501,7 +504,7 @@ func HandleUserUPDATE(db *sql.DB) gin.HandlerFunc {
 			}
 
 			//404, If No User is found
-			if strings.Contains(err.Error(), "No User found") {
+			if errors.Is(err, consts.ErrorUserNotFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})
@@ -554,7 +557,7 @@ func HandleUserDELETE(db *sql.DB, firebaseAuth *auth.Client, keepRecords bool) g
 		err = dbUtils.DeleteUser(ctx, UID, db, keepRecords)
 		if err != nil {
 			//400, Both of those errors will mean the same thing, no User found
-			if strings.Contains(err.Error(), "No User Found") {
+			if errors.Is(err, consts.ErrorUserNotFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found to Delete",
 				})
@@ -610,7 +613,7 @@ func HandleUserSEARCH(db *sql.DB) gin.HandlerFunc {
 		searchResults, err := dbUtils.SearchUser(ctx, strings.Split(query, " "), db)
 		if err != nil {
 			//404, if No user found
-			if strings.Contains(err.Error(), "No User Found") {
+			if errors.Is(err, consts.ErrorUserNotFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No User Found",
 				})

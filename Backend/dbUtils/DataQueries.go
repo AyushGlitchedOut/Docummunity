@@ -3,10 +3,12 @@ package dbUtils
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"strings"
 
+	"github.com/AyushGlitchedOut/Docummunity/consts"
 	_ "github.com/mattn/go-sqlite3"
 )
 
@@ -78,6 +80,9 @@ func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
 
 	_, err := db.ExecContext(ctx, dataInsertCommand, data.UUID, data.NAME, data.DESCRIPTION, data.FILEPATH, data.CREATOR_ID, data.PREVIEW_IMG_PATH)
 
+	if err != nil && strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
+		return consts.ErrorFOREIGNConstraintFailed
+	}
 	return err
 }
 
@@ -92,8 +97,8 @@ func GetRecord(ctx context.Context, UUID string, db DbTxCombiner) (*DATA, error)
 	//scan the result into data struct
 	err := result.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("No Records Found")
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, consts.ErrorNoRecordFound
 		}
 		return nil, err
 	}
@@ -133,7 +138,7 @@ func DeleteRecord(ctx context.Context, UUID string, creatorID string, db *sql.DB
 	//Error out If no rows are deleted i.e. Record Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No Records Found")
+		return consts.ErrorNoRecordFound
 	}
 
 	//commit the transaction
@@ -182,7 +187,7 @@ func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creator
 	//Error out If no rows are Updated i.e. Record Not Found
 	rowsAffected, _ := results.RowsAffected()
 	if rowsAffected == 0 {
-		return fmt.Errorf("No Records Found")
+		return consts.ErrorNoRecordFound
 	}
 
 	return nil
@@ -230,7 +235,7 @@ func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescriptio
 		return nil, results.Err()
 	}
 	if len(data) < 1 {
-		return nil, fmt.Errorf("No Records Found")
+		return nil, consts.ErrorNoRecordFound
 	}
 
 	return data, nil

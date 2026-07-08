@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"database/sql"
+	"errors"
 	"log"
 	"net/http"
 	"os"
@@ -98,7 +99,7 @@ func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 		data, err := dbUtils.GetRecord(ctx, uuid, db)
 		if err != nil {
 			//400, If No record found
-			if strings.Contains(err.Error(), "No Records Found") {
+			if errors.Is(err, consts.ErrorNoRecordFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Records Found",
 				})
@@ -130,6 +131,7 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		if err != nil {
 			//413, IF MaxSizeMiddleware returns an error
 			if strings.Contains(err.Error(), "request body too large") {
+				//TODO: Remove string matching here
 				ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 					"error": "File too Large",
 				})
@@ -291,7 +293,7 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 			}
 
 			//404, If The JWT given gives UID of a User that doesnt exist i.e. No foreign Key possible
-			if strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
+			if errors.Is(err, consts.ErrorFOREIGNConstraintFailed) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "The Supposed Creator Doesnt exist",
 				})
@@ -366,7 +368,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 		//Get Old Record Info
 		oldRecordInfo, err := dbUtils.GetRecord(ctx, uuid, db)
 		if err != nil {
-			if strings.Contains(err.Error(), "No Records Found") {
+			if errors.Is(err, consts.ErrorNoRecordFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "The record doesn't exist",
 				})
@@ -417,6 +419,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 
 				//413, If the file is too large
 				if strings.Contains(err.Error(), "request body too large") {
+					//TODO: Remove string matching here
 					ctx.JSON(http.StatusRequestEntityTooLarge, gin.H{
 						"error": "File too Large",
 					})
@@ -520,7 +523,7 @@ func HandleDataUPDATE(db *sql.DB) gin.HandlerFunc {
 			}
 
 			//404, IF No record found
-			if strings.Contains(err.Error(), "No Records Found") {
+			if errors.Is(err, consts.ErrorNoRecordFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Record Found for the UUID",
 				})
@@ -584,7 +587,7 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 
 		if err != nil {
 			//404, If Record not Found
-			if strings.Contains(err.Error(), "No Records Found") {
+			if errors.Is(err, consts.ErrorNoRecordFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Record Found to delete!",
 				})
@@ -632,7 +635,7 @@ func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
 		//500 If any DB error
 		if err != nil {
 			//400, IF No record is found
-			if strings.Contains(err.Error(), "No Records Found") {
+			if errors.Is(err, consts.ErrorNoRecordFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Records Found",
 				})
