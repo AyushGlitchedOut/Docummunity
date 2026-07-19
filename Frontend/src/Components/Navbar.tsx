@@ -105,21 +105,6 @@ function LoggedOutToolBar() {
           margin: 2,
         })}
         onClick={() => {
-          navigator("/download");
-        }}
-      >
-        DOWNLOAD
-      </Button>
-      <Button
-        sx={(theme) => ({
-          cursor: "pointer",
-          backgroundColor: theme.palette.primary.main,
-          color: theme.palette.text.primary,
-          fontSize: "clamp(50%, 100%, 150%)",
-          width: "30%",
-          margin: 2,
-        })}
-        onClick={() => {
           navigator("/login");
         }}
       >
@@ -140,6 +125,22 @@ function LoggedOutToolBar() {
       >
         SIGN-UP
       </Button>
+      <Button
+        sx={(theme) => ({
+          cursor: "pointer",
+          backgroundColor: theme.palette.primary.main,
+          color: theme.palette.text.primary,
+          fontSize: "clamp(50%, 100%, 150%)",
+          width: "30%",
+          margin: 2,
+        })}
+        onClick={() => {
+          navigator("/download");
+        }}
+      >
+        DOWNLOAD
+      </Button>
+
       <Button
         sx={(theme) => ({
           cursor: "pointer",

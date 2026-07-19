@@ -23,3 +23,6 @@
 - 18) What was happening was that in the DB function for deleting records as well, another DB function was being used to fetch all the records for the user. When that DB function returned error since the user didnt have any records, the error was returned  by the function to the handler which was also, due to a logical error, was catching the "records not found" error and showing 404 to the user, despite the user still existing, jst without any records. To fix it, I just removed the error catching of "records not found" in the handler and in the DB function, made it so the "records not found" error case for getUserRecords() is handled properly without returning, so that the user is deleted even if they dont have any records. 
 # Frontend
 1. (Note to self): Try to avoid the n+1 query problem
+2. Apply Character Limits and Line Limits to all Inputs
+3. Comment on the confusing layouts using Boxes and Container for Readability
+4. Note to self: NEVER user /api/ROUTENAME/, always omit the trailing backslash, it causes problems due to redirections
