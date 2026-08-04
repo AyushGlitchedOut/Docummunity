@@ -1,4 +1,4 @@
-export interface User {
+export interface UserInfo {
   UID: string;
   DISPLAY_NAME: string;
   BIO: string;

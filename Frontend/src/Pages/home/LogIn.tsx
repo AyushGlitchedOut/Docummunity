@@ -1,11 +1,9 @@
 import { useState } from "react";
-import {
-  doSignInWithGoogle,
-  doSignInWithEmailAndPassword,
-} from "../../auth/authFunctions";
+import { doSignInWithEmailAndPassword } from "../../auth/authFunctions";
 import { Box, Button, Container, TextField, Typography } from "@mui/material";
 import GoogleIcon from "../../assets/google_logo.svg";
 import { useNavigate } from "react-router-dom";
+import { handleGoogleAuth } from "./SignUp";
 
 function LogInPage() {
   const [email, setEmail] = useState<string>("");
@@ -23,18 +21,6 @@ function LogInPage() {
     }
     try {
       const result = await doSignInWithEmailAndPassword(email, password);
-      if (!result.user) {
-        return;
-      }
-      navigator("/home");
-    } catch (error) {
-      alert(error);
-    }
-  }
-
-  async function handleGoogleLogin(): Promise<void> {
-    try {
-      const result = await doSignInWithGoogle();
       if (!result.user) {
         return;
       }
@@ -137,7 +123,7 @@ function LogInPage() {
               fullWidth
               type="button"
               onClick={() => {
-                handleGoogleLogin();
+                handleGoogleAuth(navigator);
               }}
             >
               <img src={GoogleIcon} alt="Google" width={30} height={30} />

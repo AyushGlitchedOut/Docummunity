@@ -13,9 +13,25 @@ import {
   Divider,
   Avatar,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { auth } from "../../auth/fireBaseConfig";
 import { BACKEND_URL } from "../../consts";
+
+// A common google sign up function to handle both sign-up and log-in cases, used in both login and sign-up page
+export async function handleGoogleAuth(
+  navigator: NavigateFunction,
+): Promise<void> {
+  //Navigator passed as an argument rather than a new navigator since navigator is a hook and  cant be called outside of component
+  try {
+    const result = await doSignInWithGoogle();
+    if (!result.user) {
+      return;
+    }
+    navigator("/home");
+  } catch (error) {
+    alert(error);
+  }
+}
 
 function SignUpPage() {
   const [email, setEmail] = useState<string>("");
@@ -45,6 +61,12 @@ function SignUpPage() {
     if (!displayName) {
       alert("Please Enter a Display Name");
       return;
+    }
+    if (profileImageFile) {
+      if (profileImageFile.size > 2 * 1000 * 1000) {
+        alert("The file should be smaller than 2mb");
+        return;
+      }
     }
 
     try {
@@ -79,18 +101,6 @@ function SignUpPage() {
       );
       if (!createAccount.ok) {
         alert("Something Went Wrong");
-        return;
-      }
-      navigator("/home");
-    } catch (error) {
-      alert(error);
-    }
-  }
-
-  async function handleGoogleSignUp(): Promise<void> {
-    try {
-      const result = await doSignInWithGoogle();
-      if (!result.user) {
         return;
       }
       navigator("/home");
@@ -326,7 +336,7 @@ function SignUpPage() {
                 fullWidth
                 type="button"
                 onClick={() => {
-                  handleGoogleSignUp();
+                  handleGoogleAuth(navigator);
                 }}
               >
                 <img src={GoogleIcon} alt="Google" width={30} height={30} />

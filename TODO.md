@@ -26,3 +26,5 @@
 2. Apply Character Limits and Line Limits to all Inputs
 3. Comment on the confusing layouts using Boxes and Container for Readability
 4. Note to self: NEVER user /api/ROUTENAME/, always omit the trailing backslash, it causes problems due to redirections
+5. The repeated requests sometimes upon rendering of the page are due to React's strictmode
+6. Clean all of the UI + services code to make it concise and more readable
