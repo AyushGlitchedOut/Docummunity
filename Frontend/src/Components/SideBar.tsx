@@ -25,6 +25,7 @@ import {
 import { useAuth } from "../auth/fireBaseContext";
 import type { UserInfo } from "../models/models";
 import { BACKEND_URL } from "../consts";
+import { doSignOut } from "../auth/authFunctions";
 
 function SideBar() {
   const location = useLocation();
@@ -47,7 +48,8 @@ function SideBar() {
     });
 
     if (!response.ok) {
-      alert("Not OK");
+      await doSignOut();
+      alert("No User Found");
     }
     const resJSON = await response.json();
     console.log(resJSON);

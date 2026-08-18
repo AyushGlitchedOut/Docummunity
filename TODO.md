@@ -28,3 +28,5 @@
 4. Note to self: NEVER user /api/ROUTENAME/, always omit the trailing backslash, it causes problems due to redirections
 5. The repeated requests sometimes upon rendering of the page are due to React's strictmode
 6. Clean all of the UI + services code to make it concise and more readable
+7. Make it so signing up with google also allows you to save your profile picture from google account into it
+- 7) I have tried everything, and for like hours have tried and tested but a very strange bug seems to occur. I built the entire code for functionality of the image saving (two times btw, one before the last commit when i gave up and this time, when i also gave up) and even got as far as fetching the photoURL and creating file saving logic. But for some reason, whenever I go and fetch the image from google's photURL, the lh3.googleusercontent.com CDN just throws a very random 429 at me. I visit the link manually and nothing happens. Its either a bug with my understanding of the logic, or from google's error handling.

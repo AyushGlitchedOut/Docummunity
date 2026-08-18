@@ -2,6 +2,7 @@ import { useMemo, useRef, useState } from "react";
 import {
   doCreateUserWithEmailAndPassword,
   doSignInWithGoogle,
+  doSignOut,
 } from "../../auth/authFunctions";
 import GoogleIcon from "../../assets/google_logo.svg";
 import {
@@ -16,19 +17,60 @@ import {
 import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { auth } from "../../auth/fireBaseConfig";
 import { BACKEND_URL } from "../../consts";
+import type { UserCredential } from "firebase/auth";
 
 // A common google sign up function to handle both sign-up and log-in cases, used in both login and sign-up page
 export async function handleGoogleAuth(
   navigator: NavigateFunction,
 ): Promise<void> {
   //Navigator passed as an argument rather than a new navigator since navigator is a hook and  cant be called outside of component
+  var result: UserCredential | undefined;
   try {
-    const result = await doSignInWithGoogle();
+    result = await doSignInWithGoogle();
     if (!result.user) {
+      alert("Login Failed");
+      return;
+    }
+    //Creating the Form
+    const form = new FormData();
+    form.append("PROFILE_PIC", "");
+    form.append("DISPLAY_NAME", result.user.displayName ?? "[Unknown]");
+    form.append("BIO", "");
+    form.append("SETTINGS", "{}");
+
+    const token = await auth.currentUser?.getIdToken();
+    if (!token) {
+      alert("Auth Issues");
+      return;
+    }
+
+    const createAccount = await fetch(
+      //DO NOT PUT /CREATE/ or else the address wont work
+      BACKEND_URL + "/user/CREATE",
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      },
+    );
+    if (!createAccount.ok) {
+      if (createAccount.status == 409) {
+        alert("Account already Exists");
+        navigator("/home");
+        return;
+      }
+
+      alert("Something Went Wrong");
+      await doSignOut();
+      await result.user.delete();
       return;
     }
     navigator("/home");
   } catch (error) {
+    await doSignOut();
+    if (result) {
+      await result.user.delete();
+    }
     alert(error);
   }
 }
@@ -69,8 +111,9 @@ function SignUpPage() {
       }
     }
 
+    var result: UserCredential | undefined;
     try {
-      const result = await doCreateUserWithEmailAndPassword(email, password);
+      result = await doCreateUserWithEmailAndPassword(email, password);
       if (!result.user) {
         return;
       }
@@ -101,10 +144,16 @@ function SignUpPage() {
       );
       if (!createAccount.ok) {
         alert("Something Went Wrong");
+        await doSignOut();
+        await result.user.delete();
         return;
       }
       navigator("/home");
     } catch (error) {
+      await doSignOut();
+      if (result) {
+        await result.user.delete();
+      }
       alert(error);
     }
   }
