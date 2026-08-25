@@ -38,7 +38,7 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 		DISPLAY_NAME TEXT,
 		BIO TEXT,
 		PROFILE_PIC TEXT,
-		CREATION_DATE TEXT NOT NULL,
+		CREATION_DATE INTEGER NOT NULL,
 		SETTINGS TEXT
 	);`
 
@@ -56,6 +56,7 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 	FILEPATH TEXT NOT NULL,
 	CREATOR_ID TEXT NOT NULL,
 	PREVIEW_IMG_PATH TEXT,
+	CREATION_DATE INTEGER NOT NULL,
 	FOREIGN KEY (CREATOR_ID) REFERENCES USERS(UID) ON DELETE CASCADE
 	);`
 
@@ -76,9 +77,9 @@ func InitializeDB(ctx context.Context) (*sql.DB, error) {
 
 // To create a Record in the Table
 func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
-	dataInsertCommand := `INSERT INTO DATA (UUID, NAME, DESCRIPTION ,FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH) VALUES (?, ?, ?, ?, ?, ?);`
+	dataInsertCommand := `INSERT INTO DATA (UUID, NAME, DESCRIPTION ,FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH, CREATION_DATE) VALUES (?, ?, ?, ?, ?, ?, ?);`
 
-	_, err := db.ExecContext(ctx, dataInsertCommand, data.UUID, data.NAME, data.DESCRIPTION, data.FILEPATH, data.CREATOR_ID, data.PREVIEW_IMG_PATH)
+	_, err := db.ExecContext(ctx, dataInsertCommand, data.UUID, data.NAME, data.DESCRIPTION, data.FILEPATH, data.CREATOR_ID, data.PREVIEW_IMG_PATH, data.CREATION_DATE)
 
 	if err != nil && strings.Contains(err.Error(), "FOREIGN KEY constraint failed") {
 		return consts.ErrorFOREIGNConstraintFailed
@@ -89,13 +90,13 @@ func CreateRecord(ctx context.Context, data *DATA, db *sql.DB) error {
 // To obtain a record from the Table.
 func GetRecord(ctx context.Context, UUID string, db DbTxCombiner) (*DATA, error) {
 	data := &DATA{}
-	getRecordQuery := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE UUID = ?`
+	getRecordQuery := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH, CREATION_DATE FROM DATA WHERE UUID = ?`
 
 	//QueryRowContext used since it returns only one row, which is what we want
 	result := db.QueryRowContext(ctx, getRecordQuery, UUID)
 
 	//scan the result into data struct
-	err := result.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
+	err := result.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH, &data.CREATION_DATE)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return nil, consts.ErrorNoRecordFound
@@ -197,7 +198,7 @@ func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creator
 func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescription bool) ([]*DATA, error) {
 	var data []*DATA
 
-	searchCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE `
+	searchCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH, CREATION_DATE FROM DATA WHERE `
 
 	//Combine the query words given into one string that can be appended to the SQL command
 	var keyWords []string
@@ -225,7 +226,7 @@ func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescriptio
 	//scan the results into data struct
 	for results.Next() {
 		row := &DATA{}
-		err := results.Scan(&row.UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH)
+		err := results.Scan(&row.UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH, &row.CREATION_DATE)
 		if err != nil {
 			return nil, err
 		}

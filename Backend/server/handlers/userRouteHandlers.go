@@ -265,7 +265,7 @@ func HandleUserCREATE(db *sql.DB) gin.HandlerFunc {
 		//Save fields from FormData
 		user.DISPLAY_NAME = ctx.PostForm("DISPLAY_NAME")
 		user.BIO = ctx.PostForm("BIO")
-		user.CREATION_DATE = time.Now().UTC().Format("02/01/2006 03:04:05 PM MST")
+		user.CREATION_DATE = time.Now().Unix()
 		user.SETTINGS = ctx.PostForm("SETTINGS")
 
 		if user.DISPLAY_NAME == "" {

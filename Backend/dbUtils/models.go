@@ -8,6 +8,7 @@ type DATA struct {
 	FILEPATH         string
 	CREATOR_ID       string
 	PREVIEW_IMG_PATH string
+	CREATION_DATE    int64
 }
 
 // Struct to handle Info regarding updating a record
@@ -23,7 +24,7 @@ type USER struct {
 	DISPLAY_NAME  string
 	BIO           string
 	PROFILE_PIC   string
-	CREATION_DATE string
+	CREATION_DATE int64
 	SETTINGS      string
 }
 
@@ -33,7 +34,7 @@ type USER_PUBLIC struct {
 	DISPLAY_NAME  string
 	BIO           string
 	PROFILE_PIC   string
-	CREATION_DATE string
+	CREATION_DATE int64
 }
 
 // Struct to handle Info regarding updating a User

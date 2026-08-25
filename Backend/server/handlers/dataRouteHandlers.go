@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/AyushGlitchedOut/Docummunity/authUtils"
 	"github.com/AyushGlitchedOut/Docummunity/consts"
@@ -161,6 +162,7 @@ func HandleDataCREATE(db *sql.DB) gin.HandlerFunc {
 		//Name and Description
 		dataRecord.NAME = ctx.PostForm("NAME")
 		dataRecord.DESCRIPTION = ctx.PostForm("DESCRIPTION")
+		dataRecord.CREATION_DATE = time.Now().Unix()
 		if dataRecord.NAME == "" {
 			//400, IF name not present
 			ctx.JSON(http.StatusBadRequest, gin.H{

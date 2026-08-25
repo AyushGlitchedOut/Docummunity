@@ -18,7 +18,7 @@ var DeletedUserInfo = &USER{
 	BIO:           "Deleted User",
 	DISPLAY_NAME:  "[DELETED]",
 	PROFILE_PIC:   "none",
-	CREATION_DATE: "0/0/0",
+	CREATION_DATE: 0,
 	SETTINGS:      "",
 }
 
@@ -98,7 +98,7 @@ func GetUserInfo(ctx context.Context, UID string, db *sql.DB) (*USER_PUBLIC, err
 func GetUserRecords(ctx context.Context, UID string, db DbTxCombiner) ([]*DATA, error) {
 	var records []*DATA
 
-	getUserRecordsCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH FROM DATA WHERE CREATOR_ID = ?`
+	getUserRecordsCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH, CREATION_DATE FROM DATA WHERE CREATOR_ID = ?`
 
 	//get the User's Records
 	results, err := db.QueryContext(ctx, getUserRecordsCommand, UID)
@@ -112,7 +112,7 @@ func GetUserRecords(ctx context.Context, UID string, db DbTxCombiner) ([]*DATA, 
 	for results.Next() {
 		data := &DATA{}
 
-		err := results.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH)
+		err := results.Scan(&data.UUID, &data.NAME, &data.DESCRIPTION, &data.FILEPATH, &data.CREATOR_ID, &data.PREVIEW_IMG_PATH, &data.CREATION_DATE)
 		if err != nil {
 			return nil, err
 		}
