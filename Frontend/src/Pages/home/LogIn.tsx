@@ -1,9 +1,10 @@
 import { useState } from "react";
 import { doSignInWithEmailAndPassword } from "../../auth/authFunctions";
-import { Box, Button, Container, TextField, Typography } from "@mui/material";
+import { Box, Button, Container, Typography } from "@mui/material";
 import GoogleIcon from "../../assets/google_logo.svg";
 import { useNavigate } from "react-router-dom";
 import { handleGoogleAuth } from "./SignUp";
+import XTextField from "../../Components/XTextField";
 
 function LogInPage() {
   const [email, setEmail] = useState<string>("");
@@ -71,41 +72,25 @@ function LogInPage() {
             LOG-IN
           </Typography>
           <Container>
-            <Container>
-              <label htmlFor="email-input">
-                <Typography variant="h6">Email:</Typography>
-              </label>
-              <TextField
-                id="email-input"
-                label="e.g. name123@mail.com"
-                variant="outlined"
-                sx={{}}
-                fullWidth
-                color="primary"
-                value={email}
-                onChange={(event) => {
-                  setEmail(event.target.value);
-                }}
-              />
-            </Container>
-            <Container>
-              <label htmlFor="password-input">
-                <Typography variant="h6">Password:</Typography>
-              </label>
-              <TextField
-                type="password"
-                id="password-input"
-                label="e.g. first12@#$last"
-                variant="outlined"
-                sx={{}}
-                fullWidth
-                color="primary"
-                value={password}
-                onChange={(event) => {
-                  setPassword(event.target.value);
-                }}
-              />
-            </Container>
+            <XTextField
+              required
+              labelName="Email:"
+              label="e.g. name123@gmail.com"
+              value={email}
+              onChange={(event) => {
+                setEmail(event.target.value);
+              }}
+            />
+            <XTextField
+              labelName="Password"
+              label="e.g. first123@#$last"
+              required
+              type="password"
+              value={password}
+              onChange={(event) => {
+                setPassword(event.target.value);
+              }}
+            />
           </Container>
           <Container sx={{ margin: "10px" }}>
             <Button fullWidth variant="contained" type="submit">

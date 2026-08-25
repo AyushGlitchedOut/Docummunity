@@ -9,7 +9,6 @@ import {
   Box,
   Typography,
   Container,
-  TextField,
   Button,
   Divider,
   Avatar,
@@ -18,6 +17,7 @@ import { useNavigate, type NavigateFunction } from "react-router-dom";
 import { auth } from "../../auth/fireBaseConfig";
 import { BACKEND_URL } from "../../consts";
 import type { UserCredential } from "firebase/auth";
+import XTextField from "../../Components/XTextField";
 
 // A common google sign up function to handle both sign-up and log-in cases, used in both login and sign-up page
 export async function handleGoogleAuth(
@@ -242,44 +242,29 @@ function SignUpPage() {
                 }}
               />
             </Container>
-            <Container>
-              <label htmlFor="display_name">
-                <Typography variant="h6">Display Name:</Typography>
-              </label>
-              <TextField
-                required
-                id="display_name"
-                label="e.g. Ayush Gupta"
-                variant="outlined"
-                sx={{}}
-                fullWidth
-                color="primary"
-                value={displayName}
-                onChange={(event) => {
-                  setDisplayName(event.target.value);
-                }}
-              />
-            </Container>
-            <Container>
-              <label htmlFor="bio">
-                <Typography variant="h6">Bio:</Typography>
-              </label>
-              <TextField
-                id="bio"
-                label="Tell people about yourself (Optional)"
-                variant="outlined"
-                sx={{}}
-                fullWidth
-                color="primary"
-                multiline
-                minRows={2}
-                maxRows={4}
-                value={bio}
-                onChange={(event) => {
-                  setBio(event.target.value);
-                }}
-              />
-            </Container>
+            <XTextField
+              labelName="Display Name:"
+              id="display_name"
+              required
+              label="e.g. Ayush Gupta"
+              value={displayName}
+              onChange={(event) => {
+                setDisplayName(event.target.value);
+              }}
+            />
+            <XTextField
+              labelName="Bio:"
+              id="bio"
+              required
+              label="Tell people about yourself (Optional)"
+              value={bio}
+              onChange={(event) => {
+                setBio(event.target.value);
+              }}
+              multiline
+              minRows={2}
+              maxRows={4}
+            />
           </Box>
           <Divider
             sx={(theme) => ({
@@ -312,62 +297,38 @@ function SignUpPage() {
               SIGN-UP
             </Typography>
             <Container>
-              <Container>
-                <label htmlFor="email-input">
-                  <Typography variant="h6">Email:</Typography>
-                </label>
-                <TextField
-                  required
-                  id="email-input"
-                  label="e.g. name123@mail.com"
-                  variant="outlined"
-                  sx={{}}
-                  fullWidth
-                  color="primary"
-                  value={email}
-                  onChange={(event) => {
-                    setEmail(event.target.value);
-                  }}
-                />
-              </Container>
-              <Container>
-                <label htmlFor="password-input">
-                  <Typography variant="h6">Password:</Typography>
-                </label>
-                <TextField
-                  required
-                  type="password"
-                  id="password-input"
-                  label="e.g. first12@#$last"
-                  variant="outlined"
-                  sx={{}}
-                  fullWidth
-                  color="primary"
-                  value={password}
-                  onChange={(event) => {
-                    setPassword(event.target.value);
-                  }}
-                />
-              </Container>
-              <Container>
-                <label htmlFor="password-confirm-input">
-                  <Typography variant="h6">Repeat Password:</Typography>
-                </label>
-                <TextField
-                  required
-                  type="password"
-                  id="password-confirm-input"
-                  label="e.g. first12@#$last"
-                  variant="outlined"
-                  sx={{}}
-                  fullWidth
-                  color="primary"
-                  value={passwordConfirm}
-                  onChange={(event) => {
-                    setPasswordConfirm(event.target.value);
-                  }}
-                />
-              </Container>
+              <XTextField
+                required
+                labelName="Email:"
+                id="email-input"
+                label="e.g. name123@mail.com"
+                value={email}
+                onChange={(event) => {
+                  setEmail(event.target.value);
+                }}
+              />
+              <XTextField
+                required
+                type="password"
+                labelName="Password:"
+                id="password-input"
+                label="e.g. first12@#$last"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value);
+                }}
+              />
+              <XTextField
+                required
+                type="password"
+                labelName="Repeat Password:"
+                id="password-confirm-input"
+                label="e.g. first12@#$last"
+                value={passwordConfirm}
+                onChange={(event) => {
+                  setPasswordConfirm(event.target.value);
+                }}
+              />
             </Container>
             <Container sx={{ margin: "10px" }}>
               <Button fullWidth variant="contained" type="submit">

@@ -50,6 +50,7 @@ function SideBar() {
     if (!response.ok) {
       await doSignOut();
       alert("No User Found");
+      return;
     }
     const resJSON = await response.json();
     console.log(resJSON);
