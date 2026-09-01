@@ -30,3 +30,6 @@
 6. Clean all of the UI + services code to make it concise and more readable
 7. Make it so signing up with google also allows you to save your profile picture from google account into it
 - 7) I have tried everything, and for like hours have tried and tested but a very strange bug seems to occur. I built the entire code for functionality of the image saving (two times btw, one before the last commit when i gave up and this time, when i also gave up) and even got as far as fetching the photoURL and creating file saving logic. But for some reason, whenever I go and fetch the image from google's photURL, the lh3.googleusercontent.com CDN just throws a very random 429 at me. I visit the link manually and nothing happens. Its either a bug with my understanding of the logic, or from google's error handling.
+8) Use MUI's grid or another responsive design system to make responsive designs
+9) I have made the frontend with MUI as its base, but i dont seem to be using MUI's components that much. In future, either may increase utilisation of the components without changing design much to make the website more responsive and production-ready, or drop it all together to decrease dependency (not remove it since the theme feature is necessary, but stop using mui components everywhere)
+10) DO chrome's lighthouse reviews for website

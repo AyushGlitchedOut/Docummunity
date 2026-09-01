@@ -5,6 +5,7 @@ import { useDropzone } from "react-dropzone";
 import { useAuth } from "../../auth/fireBaseContext";
 import { BACKEND_URL } from "../../consts";
 import { useNavigate } from "react-router-dom";
+import { UploadFile } from "@mui/icons-material";
 
 function CreatePage() {
   const [title, setTitle] = useState("");
@@ -70,6 +71,8 @@ function CreatePage() {
     }
 
     const form = new FormData();
+    console.log(DocumentFile.type);
+    console.log(PreviewImageFile?.type);
     form.append("FILE", DocumentFile);
     form.append("NAME", title);
     form.append("DESCRIPTION", Description);
@@ -87,6 +90,9 @@ function CreatePage() {
 
     if (!response.ok) {
       alert("Something Went Wrong!");
+      if (response.status == 415) {
+        alert("Unsupported File type. Please try valid filetypes");
+      }
       return;
     }
 
@@ -133,6 +139,7 @@ function CreatePage() {
         >
           {/* React Dropzone package's input  */}
           <input {...DocumentPickerDropzone.getInputProps()} />
+          <UploadFile />
           <Typography variant="subtitle1">
             {DocumentFile ? DocumentFile.name : "Please enter a valid pdf File"}
           </Typography>

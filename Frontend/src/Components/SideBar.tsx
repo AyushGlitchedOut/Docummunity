@@ -60,6 +60,7 @@ function SideBar() {
       DISPLAY_NAME: resJSON.message.DISPLAY_NAME,
       PROFILE_PIC: resJSON.message.PROFILE_PIC,
       SETTINGS: resJSON.message.SETTINGS,
+      CREATION_DATE: resJSON.message.CREATION_DATE,
     };
     setUserInfo(newUser);
     const fetchedAvatarURL = newUser.PROFILE_PIC.split("/");
