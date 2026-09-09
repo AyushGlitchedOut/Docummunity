@@ -28,6 +28,7 @@ func CreateDataRoutes(group *gin.RouterGroup, firebaseAuth *auth.Client, db *sql
 			freeDataRoutes.GET("/GET/:uuid", handlers.HandleDataGET(db))
 			freeDataRoutes.GET("/PREVIEW/:filename", handlers.HostDataPreview())
 			freeDataRoutes.GET("/FILE/:filename", handlers.HostDataFiles())
+			freeDataRoutes.GET("/FILE/:filename/meta", handlers.HostDataFilesMetadata())
 		}
 	}
 }

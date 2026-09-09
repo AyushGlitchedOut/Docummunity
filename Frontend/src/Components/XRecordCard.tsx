@@ -9,6 +9,7 @@ import {
 import type { OtherUserRecordInfo, RecordInfo } from "../models/models";
 import { BACKEND_URL } from "../consts";
 import { Edit, Visibility } from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
 
 interface XRecordCardProps {
   height: string;
@@ -19,6 +20,7 @@ interface XRecordCardProps {
 
 //Already has Margin btw
 export default function XRecordCard(props: XRecordCardProps) {
+  const navigator = useNavigate();
   const previewURLparts = props.record.PREVIEW_IMG_PATH.split("/");
   const previewIMGFilename = previewURLparts[previewURLparts.length - 1];
 
@@ -152,6 +154,9 @@ export default function XRecordCard(props: XRecordCardProps) {
           opacity: 0,
           pointerEvents: "none",
           ":hover": { backgroundColor: "grey" },
+        }}
+        onClick={() => {
+          navigator("/home/viewRecord/" + props.record.UUID);
         }}
         aria-label="view"
       >

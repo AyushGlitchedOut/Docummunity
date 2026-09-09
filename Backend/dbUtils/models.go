@@ -18,6 +18,11 @@ type DataInfoUpdate struct {
 	DESCRIPTION      string
 }
 
+// Struct to send File Metadata
+type DataMetaInfo struct {
+	SIZE int64
+}
+
 // Base struct for model of User
 type USER struct {
 	UID           string

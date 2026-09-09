@@ -6,6 +6,13 @@ export interface UserInfo {
   SETTINGS: string;
   CREATION_DATE: string;
 }
+export interface OtherUserInfo {
+  UID: string;
+  DISPLAY_NAME: string;
+  BIO: string;
+  PROFILE_PIC: string;
+  CREATION_DATE: string;
+}
 
 //CHANGE THIS IF BACKEND SCHEMA CHANGES, ALSO EVERY NAME NEEDS TO MATCH SAME AS BACKEND RESPONSES
 export interface RecordInfo {
@@ -20,4 +27,7 @@ export interface RecordInfo {
 export interface OtherUserRecordInfo extends RecordInfo {
   CREATOR_NAME?: string;
   CREATOR_PROFILE_PIC?: string;
+}
+export interface RecordMetadata {
+  SIZE: string;
 }

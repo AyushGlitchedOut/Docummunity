@@ -56,6 +56,43 @@ func HostDataFiles() gin.HandlerFunc {
 	}
 }
 
+// Handler to return additional metadata about the file without returning the file itself
+func HostDataFilesMetadata() gin.HandlerFunc {
+	return func(ctx *gin.Context) {
+		//Get filename from query
+		fileName := ctx.Param("filename")
+
+		if fileName == "" {
+			//400, If the file isnt found
+			ctx.JSON(http.StatusBadRequest, gin.H{
+				"error": "No File Found for the Record",
+			})
+			return
+		}
+
+		//construct filepath for file
+		verifiedFileName := filepath.Base(fileName)
+		filePath := filepath.Join(consts.FileDirectory, verifiedFileName)
+
+		fileInfo, err := os.Stat(filePath)
+		if err != nil {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Something Went Wrong!",
+			})
+			log.Println("ERROR:", err.Error())
+			return
+		}
+
+		metadata := &dbUtils.DataMetaInfo{}
+		metadata.SIZE = fileInfo.Size()
+
+		ctx.JSON(http.StatusOK, gin.H{
+			"message": metadata,
+		})
+
+	}
+}
+
 // Handler to statically Host Preview Files for Records
 func HostDataPreview() gin.HandlerFunc {
 	return func(ctx *gin.Context) {
@@ -99,7 +136,7 @@ func HandleDataGET(db *sql.DB) gin.HandlerFunc {
 		//Get the Record
 		data, err := dbUtils.GetRecord(ctx, uuid, db)
 		if err != nil {
-			//400, If No record found
+			//404, If No record found
 			if errors.Is(err, consts.ErrorNoRecordFound) {
 				ctx.JSON(http.StatusNotFound, gin.H{
 					"error": "No Records Found",
