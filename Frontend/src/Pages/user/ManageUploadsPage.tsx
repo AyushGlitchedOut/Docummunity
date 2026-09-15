@@ -1,28 +1,24 @@
 import { Box, CircularProgress, Typography } from "@mui/material";
 import XRecordCard from "../../Components/XRecordCard";
 import type { RecordInfo } from "../../models/models";
-import { useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { BACKEND_URL } from "../../consts";
-import { useAuth } from "../../auth/fireBaseContext";
+import { UserContext } from "../../Contexts/UserContext";
 function ManageUploadsPage() {
-  const auth = useAuth();
-
   //TODO: will make loading screens other places too, where there needs to be loading
   const [recordList, setRecordList] = useState<RecordInfo[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const user = useContext(UserContext);
 
   async function fetchUploads(): Promise<void> {
     setLoading(true);
-    if (!auth || !auth.currentUser) {
+    if (!user) {
       return;
     }
 
-    const response = await fetch(
-      `${BACKEND_URL}/user/RECORDS/${auth.currentUser.uid}`,
-      {
-        method: "GET",
-      },
-    );
+    const response = await fetch(`${BACKEND_URL}/user/RECORDS/${user.UID}`, {
+      method: "GET",
+    });
     if (!response.ok) {
       if (response.status == 404) {
         setLoading(false);
@@ -31,6 +27,7 @@ function ManageUploadsPage() {
 
       alert("Something Went Wrong!");
       console.log(response.body);
+      setLoading(false);
       return;
     }
 
@@ -41,9 +38,9 @@ function ManageUploadsPage() {
   }
 
   useEffect(() => {
-    if (!auth) return;
+    if (!user) return;
     fetchUploads();
-  }, [auth]);
+  }, [user]);
 
   return (
     <Box

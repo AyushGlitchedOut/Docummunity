@@ -16,61 +16,21 @@ import {
   ListItemText,
   Typography,
 } from "@mui/material";
-import { useEffect, useState, type JSX } from "react";
+import { useContext, type JSX } from "react";
 import {
   useLocation,
   useNavigate,
   type NavigateFunction,
 } from "react-router-dom";
-import { useAuth } from "../auth/fireBaseContext";
 import type { UserInfo } from "../models/models";
 import { BACKEND_URL } from "../consts";
-import { doSignOut } from "../auth/authFunctions";
+import { UserContext } from "../Contexts/UserContext";
 
 function SideBar() {
   const location = useLocation();
   const navigator = useNavigate();
-  const auth = useAuth();
-  const [UserInfo, setUserInfo] = useState<UserInfo>();
-  const [AvatarURL, setAvatarURL] = useState<string>();
-
-  async function fetchUserInfo(): Promise<void> {
-    if (!auth?.currentUser) return;
-    const token = await auth?.currentUser?.getIdToken();
-    if (!token) {
-      alert("Auth Issues");
-      return;
-    }
-
-    const response = await fetch(BACKEND_URL + "/user/ACCOUNT", {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
-    });
-
-    if (!response.ok) {
-      await doSignOut();
-      alert("No User Found");
-      return;
-    }
-    const resJSON = await response.json();
-    console.log(resJSON);
-    const newUser: UserInfo = {
-      BIO: resJSON.message.BIO,
-      UID: resJSON.message.UID,
-      DISPLAY_NAME: resJSON.message.DISPLAY_NAME,
-      PROFILE_PIC: resJSON.message.PROFILE_PIC,
-      SETTINGS: resJSON.message.SETTINGS,
-      CREATION_DATE: resJSON.message.CREATION_DATE,
-    };
-    setUserInfo(newUser);
-    const fetchedAvatarURL = newUser.PROFILE_PIC.split("/");
-    setAvatarURL(fetchedAvatarURL[fetchedAvatarURL.length - 1]);
-  }
-
-  useEffect(() => {
-    if (!auth) return;
-    fetchUserInfo();
-  }, [auth]);
+  const user: UserInfo | null = useContext(UserContext);
+  const AvatarURL = user?.PROFILE_PIC.split("/").at(-1);
 
   return (
     <Box
@@ -116,7 +76,7 @@ function SideBar() {
           }}
         >
           <Typography>Welcome Back, </Typography>
-          <Typography>{UserInfo ? UserInfo.DISPLAY_NAME : "User"}</Typography>
+          <Typography>{user ? user.DISPLAY_NAME : "User"}</Typography>
         </Box>
       </Box>
       <Divider
