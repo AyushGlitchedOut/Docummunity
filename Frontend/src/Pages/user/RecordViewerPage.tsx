@@ -117,6 +117,8 @@ export default function RecordViewerPage() {
               height: "90%",
               width: "45%",
               margin: "1%",
+              display: "flex",
+              flexDirection: "column",
             }}
           >
             <img
@@ -124,6 +126,7 @@ export default function RecordViewerPage() {
               style={{
                 maxWidth: "100%",
                 maxHeight: "50%",
+                alignSelf: "center",
               }}
             />
             <Typography variant="subtitle2">By:</Typography>

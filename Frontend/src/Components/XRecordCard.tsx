@@ -8,8 +8,9 @@ import {
 } from "@mui/material";
 import type { OtherUserRecordInfo, RecordInfo } from "../models/models";
 import { BACKEND_URL } from "../consts";
-import { Edit, Visibility } from "@mui/icons-material";
+import { Edit, HideImageSharp, Visibility } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { useState } from "react";
 
 interface XRecordCardProps {
   height: string;
@@ -21,8 +22,11 @@ interface XRecordCardProps {
 //Already has Margin btw
 export default function XRecordCard(props: XRecordCardProps) {
   const navigator = useNavigate();
-  const previewURLparts = props.record.PREVIEW_IMG_PATH.split("/");
-  const previewIMGFilename = previewURLparts[previewURLparts.length - 1];
+
+  const previewIMGFilename = props.record.PREVIEW_IMG_PATH.split("/").at(-1);
+  const [imageFound, setImageFound] = useState<boolean>(
+    props.record.PREVIEW_IMG_PATH != "",
+  );
 
   var forUsersRecords: boolean = true;
 
@@ -66,18 +70,27 @@ export default function XRecordCard(props: XRecordCardProps) {
       <Box
         sx={{
           width: "100%",
-          maxHeight: "60%",
-          minHeight: "40%",
+          height: "60%",
           display: "flex",
           alignItems: "center",
-          justifyContent: "center",
+          justifyContent: "space-between",
           flexDirection: "column",
         }}
       >
-        <img
-          src={`${BACKEND_URL}/data/PREVIEW/${previewIMGFilename}`}
-          style={{ minWidth: "40", maxWidth: "80%", marginTop: "5%" }}
-        />
+        <Box></Box>
+        {imageFound ? (
+          <img
+            src={`${BACKEND_URL}/data/PREVIEW/${previewIMGFilename}`}
+            alt="No Preview Image found"
+            onError={() => {
+              setImageFound(false);
+            }}
+            style={{ maxWidth: "80%", maxHeight: "80%", marginTop: "5%" }}
+          />
+        ) : (
+          <HideImageSharp sx={{ fontSize: "500%" }} />
+        )}
+
         <Divider
           variant="fullWidth"
           sx={{ borderWidth: "2px", width: "100%", marginTop: "5%" }}
@@ -122,7 +135,7 @@ export default function XRecordCard(props: XRecordCardProps) {
         >
           <Avatar
             sx={{ marginLeft: "1%" }}
-            src={props.record.CREATOR_PROFILE_PIC}
+            src={`${BACKEND_URL}/user/PROFILE_PIC/${props.record.CREATOR_PROFILE_PIC.split("/").at(-1)}`}
           ></Avatar>
           <Typography
             variant="h5"

@@ -37,3 +37,4 @@
 9) I have made the frontend with MUI as its base, but i dont seem to be using MUI's components that much. In future, either may increase utilisation of the components without changing design much to make the website more responsive and production-ready, or drop it all together to decrease dependency (not remove it since the theme feature is necessary, but stop using mui components everywhere)
 10) DO chrome's lighthouse reviews for website
 11) After completing everything, make sure repeatedly used images/data are being cached properly to avoid unncecesary requests
+12) Build Loading screen in signup and login pages for the delay between clicking the login/signup button and actually navigating to userHome page.

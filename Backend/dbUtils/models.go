@@ -23,6 +23,12 @@ type DataMetaInfo struct {
 	SIZE int64
 }
 
+type DataSearchResult struct {
+	DATA
+	CREATOR_NAME        string
+	CREATOR_PROFILE_PIC string
+}
+
 // Base struct for model of User
 type USER struct {
 	UID           string

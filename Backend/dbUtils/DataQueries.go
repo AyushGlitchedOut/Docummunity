@@ -195,10 +195,14 @@ func UpdateRecord(ctx context.Context, UID string, data *DataInfoUpdate, creator
 }
 
 // To search a record by Name and/or Description query. The last boolean is useDescription, stating whether to check Description while querying or not
-func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescription bool) ([]*DATA, error) {
-	var data []*DATA
+func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescription bool) ([]*DataSearchResult, error) {
+	var data []*DataSearchResult
 
-	searchCommand := `SELECT UUID, NAME, DESCRIPTION, FILEPATH, CREATOR_ID, PREVIEW_IMG_PATH, CREATION_DATE FROM DATA WHERE `
+	searchCommand := `SELECT 
+	DATA.UUID, DATA.NAME, DATA.DESCRIPTION, DATA.FILEPATH, DATA.CREATOR_ID, DATA.PREVIEW_IMG_PATH, DATA.CREATION_DATE,
+	USERS.DISPLAY_NAME, USERS.PROFILE_PIC 
+	FROM DATA INNER JOIN USERS ON DATA.CREATOR_ID=USERS.UID 
+	WHERE `
 
 	//Combine the query words given into one string that can be appended to the SQL command
 	var keyWords []string
@@ -225,8 +229,8 @@ func SearchRecord(ctx context.Context, query []string, db *sql.DB, useDescriptio
 
 	//scan the results into data struct
 	for results.Next() {
-		row := &DATA{}
-		err := results.Scan(&row.UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH, &row.CREATION_DATE)
+		row := &DataSearchResult{}
+		err := results.Scan(&row.UUID, &row.NAME, &row.DESCRIPTION, &row.FILEPATH, &row.CREATOR_ID, &row.PREVIEW_IMG_PATH, &row.CREATION_DATE, &row.CREATOR_NAME, &row.CREATOR_PROFILE_PIC)
 		if err != nil {
 			return nil, err
 		}

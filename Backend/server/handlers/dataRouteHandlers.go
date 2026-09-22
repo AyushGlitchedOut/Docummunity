@@ -650,7 +650,7 @@ func HandleDataDELETE(db *sql.DB) gin.HandlerFunc {
 // Handler for When the User wants to search a Record
 func HandleDataSEARCH(db *sql.DB) gin.HandlerFunc {
 	return func(ctx *gin.Context) {
-		searchResults := []*dbUtils.DATA{}
+		searchResults := []*dbUtils.DataSearchResult{}
 
 		//Get Query
 		query := ctx.Param("query")
