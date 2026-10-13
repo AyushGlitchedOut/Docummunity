@@ -38,3 +38,4 @@
 10) DO chrome's lighthouse reviews for website
 11) After completing everything, make sure repeatedly used images/data are being cached properly to avoid unncecesary requests
 12) Build Loading screen in signup and login pages for the delay between clicking the login/signup button and actually navigating to userHome page.
+13) Lazy Load Everything to prevent overloading the server and also to prevent bandwidth waste (especially for search and manage uploads page)

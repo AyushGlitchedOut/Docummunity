@@ -23,6 +23,7 @@ import type { OtherUserInfo, OtherUserRecordInfo } from "../../models/models";
 import { BACKEND_URL } from "../../consts";
 import XRecordCard from "../../Components/XRecordCard";
 import XUserCard from "../../Components/XUserCard";
+import TimeAgo from "../../helper/TimeAgoFormatter";
 
 function SearchPage() {
   const [typeofResults, setTypeofResults] = useState<string>("records");
@@ -76,6 +77,8 @@ function SearchPage() {
           setLoading(false);
           return;
         }
+        setRecordSearchResults([]);
+        setUserSearchResults([]);
         setLoading(false);
         return;
       }
@@ -162,6 +165,8 @@ function SearchPage() {
             <Select
               value={typeofResults}
               onChange={(event) => {
+                setRecordSearchResults([]);
+                setUserSearchResults([]);
                 setTypeofResults(event.target.value);
               }}
               sx={{
@@ -255,8 +260,18 @@ function SearchPage() {
           flex: 1,
           borderTop: "5px solid" + theme.palette.divider,
           display: "flex",
-          alignItems: loading ? "center" : "start",
-          justifyContent: loading ? "center" : "start",
+          alignItems:
+            loading ||
+            (typeofResults == "records" && recordSearchResults.length <= 0) ||
+            (typeofResults == "users" && userSearchResults.length <= 0)
+              ? "center"
+              : "start",
+          justifyContent:
+            loading ||
+            (typeofResults == "records" && recordSearchResults.length <= 0) ||
+            (typeofResults == "users" && userSearchResults.length <= 0)
+              ? "center"
+              : "start",
           flexDirection: "row",
           flexWrap: "wrap",
           overflow: "auto",
@@ -265,7 +280,7 @@ function SearchPage() {
         {loading ? (
           <CircularProgress enableTrackSlot aria-label="loading" size={100} />
         ) : typeofResults == "records" ? (
-          !recordSearchResults ? (
+          recordSearchResults.length <= 0 ? (
             <Typography variant="h6">No Records Found!</Typography>
           ) : (
             recordSearchResults.map((recordInfo) => {
@@ -279,8 +294,10 @@ function SearchPage() {
               );
             })
           )
-        ) : !userSearchResults ? (
-          <Typography variant="h6">No Users Found</Typography>
+        ) : userSearchResults.length <= 0 ? (
+          <Typography variant="h6" sx={{}}>
+            No Users Found!
+          </Typography>
         ) : (
           userSearchResults.map((userInfo) => {
             return (

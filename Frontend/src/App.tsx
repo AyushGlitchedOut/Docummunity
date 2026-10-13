@@ -13,6 +13,7 @@ import ManageUploadsPage from "./Pages/user/ManageUploadsPage";
 import SettingsPage from "./Pages/user/SettingsPage";
 import DownloadPage from "./Pages/home/DownloadPage";
 import RecordViewerPage from "./Pages/user/RecordViewerPage";
+import UserViewerPage from "./Pages/user/userViewerPage";
 
 function App() {
   return (
@@ -35,6 +36,7 @@ function App() {
             {/* Fallback route to stop mistakenly navigating to viewRecord/ */}
             <Route element={<Navigate to={"/home"} />} path="viewRecord" />
             <Route element={<RecordViewerPage />} path="viewRecord/:uuid" />
+            <Route element={<UserViewerPage />} path="viewUser/:uid" />
           </Route>
         </Routes>
       </BrowserRouter>
